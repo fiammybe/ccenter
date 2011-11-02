@@ -1,0 +1,11 @@
+<h1><{$smarty.const._AM_CCENTER_REQUIREMENTS}></h1>
+
+<p><{$smarty.const._AM_CCENTER_REQUIREMENTS_INFO}></p>
+
+<ul>
+<{foreach item=failed_requirement from=$failed_requirements}>
+	<li><{$failed_requirement}></li>
+<{/foreach}>
+</ul>
+
+<p><{$smarty.const._AM_CCENTER_REQUIREMENTS_SUPPORT}></p>

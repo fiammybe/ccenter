@@ -1,0 +1,18 @@
+<link href="<{$icms_url}>/modules/<{$dirname}>/module_ccenter.css" rel="stylesheet" type="text/css" />
+
+<{if $ccenter_show_breadcrumb}>
+	<div class="ccenter_headertable">
+		<{if $ccenter_module_home}>
+			<span class="ccenter_modulename"><{$ccenter_module_home}></span>
+		<{/if}>
+		<{if $ccenter_category_path}>
+			<span class="ccenter_breadcrumb">
+			<{if $ccenter_module_home}>
+				&nbsp;:&nbsp;
+			<{/if}>
+			<{$ccenter_category_path}></span>
+		<{/if}>
+	</div>
+<{/if}>
+
+<{$ccenter_indexarray.indeximage}>

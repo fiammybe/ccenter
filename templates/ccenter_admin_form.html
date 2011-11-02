@@ -1,0 +1,14 @@
+<{if $ccenter_form_title}>
+	<h1><{$ccenter_form_title}></h1>
+<{/if}>
+<{if $ccenter_form_info}>
+	<p><{$ccenter_form_info}></p>
+<{/if}>
+
+<{if $ccenter_form_table}>
+	<{$ccenter_form_table}>
+<{/if}>
+
+<{if $addform}>
+	<{includeq file='db:system_common_form.html' form=$addform}>
+<{/if}>
