@@ -1,5 +1,5 @@
 <?php
-// $Id: comment_new.php,v 1.5 2011-03-14 13:59:16 nobu Exp $
+// $Id$
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //
@@ -25,12 +25,17 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
 include '../../mainfile.php';
+include 'functions.php';
 
-$com_itemid = isset( $_GET['com_itemid'] ) ? intval( $_GET['com_itemid'] ) : 0;
-if ( $com_itemid > 0 ) {
-    // Get form title
-    $sql = 'SELECT title FROM ' . icms::$xoopsDB -> prefix( 'ccenter_form' ) . ' WHERE formid=' . $com_itemid;
-    $row = icms::$xoopsDB -> fetchArray( icms::$xoopsDB -> query( $sql ) );
-    $com_replytitle = $row['title'];
-    include ICMS_ROOT_PATH . '/include/comment_new.php';
-}
+$com_itemid = isset($_GET['com_itemid']) ? (int) $_GET['com_itemid'] : 0;
+
+$data = cc_get_message($com_itemid);
+
+$com_replytext = _POSTEDBY.'&nbsp;<b>'.
+    icms_member_user_Handler::getUserLink($data['uid']).'</b>&nbsp;'.
+    _DATE.'&nbsp;<b>'.formatTimestamp($data['mtime']).'</b>
+<br /><br />'.icms_core_DataFilter::checkVar($data['body'], 'text', 'input')."<br/><br/>".
+
+$com_replytitle = $data['title'];
+
+include ICMS_ROOT_PATH.'/include/comment_new.php';

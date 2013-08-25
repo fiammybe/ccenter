@@ -1,5 +1,5 @@
 <?php
-// $Id: modinfo.php,v 1.3 2009-07-07 12:00:42 nobu Exp $
+// $Id$
 // Module Info
 // Traduzido para o Portugues do Brasil por: Miraldo Antoninho Ohse (m_ohse@hotmail.com).
 

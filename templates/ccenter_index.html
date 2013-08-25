@@ -1,63 +1,9 @@
-<{includeq file='db:ccenter_header.html'}>
-
-<!-- display index header -->
-<{$ccenter_indexarray.indexheader}>
-<!-- display index heading -->
-<{$ccenter_indexarray.indexheading}>
-
-
-<{if $ccenter_sprockets}>
-
-	<h2><{$smarty.const._CO_CCENTER_FORMS_CATS}></h2>
-	
-	<{if $ccenter_cat_list}>
-		<ul>
-			<{foreach item=cat from=$ccenter_cat_list}>
-				<li><{$cat}></li>
-			<{/foreach}>
-		</ul>
-	<{else}>
-		<{$smarty.const._CO_CCENTER_NO_CATS_TO_DISPLAY}>
-	<{/if}>
-
-<!-- index page view -->
-	<{if $ccenter_forms_array}>
-		<div>		
-			<!-- pagination control -->
-			<{if $ccenter_pagenav }><{$ccenter_pagenav}><{/if}>
-		
-			<!-- display articles loop -->		
-			<{foreach item=ccenter_form from=$ccenter_forms_array}>
-				<div class="ccenter-forms-container">		
-					<h2><{$ccenter_form.itemLink}></h2>
-					<{if $ccenter_form.tag}>
-						| <{$smarty.const._CO_NEWS_ARTICLE_TAGS}><{$ccenter_form.tag}>
-					<{/if}>
-				</div>
-			<{/foreach}>
-		
-			<!-- pagination control -->
-			<{if $ccenter_navbar }><{$ccenter_navbar}><{/if}>
-		
-		</div>
-	<{/if}>
-
+<{if $forms}>
+<ul>
+<{foreach from=$forms item=form}>
+<li><a href="?form=<{$form.formid}>"><{$form.title}></a></li>
+<{/foreach}>
+</ul>
 <{else}>
-
-	<div>
-		<!-- pagination control -->
-		<{if $ccenter_pagenav }><{$ccenter_pagenav}><{/if}>
-		
-		<ul>
-			<{foreach item=ccenter_form from=$ccenter_forms_array}>
-				<li>
-					<{$ccenter_form.itemLink}>
-				</li>
-			<{/foreach}>
-		</ul>
-	</div>
-		
+<{$smarty.const._MD_NOFORMS}>
 <{/if}>
-
-<!-- display indexfooter -->		
-<{$ccenter_indexarray.indexfooter}>

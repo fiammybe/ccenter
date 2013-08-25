@@ -1,5 +1,5 @@
 <?php
-// $Id: blocks.php,v 1.2 2009-07-07 12:00:42 nobu Exp $
+// $Id$
 // Traduzido para o Portugues do Brasil por: Miraldo Antoninho Ohse (m_ohse@hotmail.com).
 
 define("_BL_CCENTER_OPT_LINES", "Linhas");

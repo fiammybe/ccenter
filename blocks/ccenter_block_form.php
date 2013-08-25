@@ -1,6 +1,6 @@
 <?php
 // Display contact form in block
-// $Id: ccenter_block_form.php,v 1.5 2009-07-04 05:24:38 nobu Exp $
+// $Id$
 
 global $icmsConfig;
 
@@ -9,10 +9,10 @@ $lang = $icmsConfig['language'];
 $main = "$moddir/language/$lang/main.php";
 if (!file_exists($main)) $main = "$moddir/language/english/main.php";
 include_once $main;
-include_once "$moddir/include/functions.php";
+include_once "$moddir/functions.php";
 
 function b_ccenter_form_show($options) {
-    global $icmsTpl;
+    global $xoopsTpl;
     $cond = "active";
     if (is_object(icms::$user)) {
 	$conds = array();

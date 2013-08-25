@@ -1,15 +1,15 @@
-Hallo {X_UNAME}
+Hello {X_UNAME},
 
-Der Status Ihrer Nachricht "{FORM_NAME}(ID:{MSG_ID})" wurde aktualisiert.
+The message "{FORM_NAME}(ID:{MSG_ID})" status was changed.
 
 {LOG_STATUS}
 
-Änderungen durchgeführt von: {CHANGE_BY}
+Change by {CHANGE_BY}
 
-Diese Benachrichtigung betreffen folgende URL:
+This message reference to following URL:
 {MSG_URL}
 
-Sollte dies ein Fehler sein oder Sie wünschen keine weiteren Benachrichtigungen über neue Kommentare, aktualisieren Sie bitte Ihre Benachrichtigungsoptionen über den nachfolgenden Link:
+If this is an error or you wish not to receive further such notifications, please update your subscriptions by visiting the link below:
 {X_UNSUBSCRIBE_URL}
 
 -----------

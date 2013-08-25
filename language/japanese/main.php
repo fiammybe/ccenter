@@ -1,5 +1,5 @@
 <?php
-// $Id: main.php,v 1.2 2011-03-14 13:59:17 nobu Exp $
+// $Id$
 
 define('_MD_EVALS','É¾²Á');
 define('_MD_COUNT','·ï¿ô');

@@ -1,28 +1,9 @@
 <?php
-/**
- * ccenter is a form module
- * 
- * File: index.php
- * 
- * index-page of ccenter module
- * 
- * @copyright	Copyright QM-B (Steffen Flohrer) 2011
- * @license		http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License (GPL)
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		0.94
- * @author		Nobuhiro Yasutomi
- * @package		ccenter
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		1.00
- * @author		QM-B
- * @package		ccenter
- * @version		$Id$
- * 
- */
+// Export data in CSV format
+// $Id$
 
-include "header.php";
+include "../../mainfile.php";
+include "functions.php";
 
 if (!is_object(icms::$user)) {
     redirect_header(ICMS_URL.'/user.php', 3, _NOPERM);

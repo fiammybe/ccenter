@@ -1,5 +1,5 @@
 <?php
-// $Id: admin.php,v 1.5 2011-03-14 13:59:17 nobu Exp $
+// $Id$
 
 define('_AM_FORM_EDIT', 'コンタクトフォームの編集');
 define('_AM_FORM_NEW', '新規コンタクトフォームの作成');

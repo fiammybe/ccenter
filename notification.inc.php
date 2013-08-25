@@ -1,5 +1,5 @@
 <?php
-// $Id: notification.inc.php,v 1.3 2007-05-13 05:44:01 nobu Exp $
+// $Id$
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //
@@ -30,7 +30,7 @@ function ccenter_notify_iteminfo($category, $item_id)
 {
 
     $item = array('name'=>'','url'=>'');
-    $dirname = icms::$module -> getVar( 'dirname' );
+    $dirname = basename(dirname(__FILE__));
     if ($category=='message' && $item_id!=0) {
 	// Assume we have a valid story id
 	$sql = "SELECT fidref, touid, title FROM ".

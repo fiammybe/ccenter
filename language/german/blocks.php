@@ -1,5 +1,5 @@
 <?php
-// $Id: blocks.php,v 1.1 2009-07-02 01:57:48 nobu Exp $
+// $Id$
 
 define("_BL_CCENTER_OPT_LINES", "Zeilen");
 define("_BL_CCENTER_OPT_SORT", "Reihenfolge");

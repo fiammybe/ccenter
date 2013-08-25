@@ -1,6 +1,6 @@
-Hallo {X_UNAME},
+Hello {X_UNAME},
 
-Es liegt eine neue Kontakt-Nachricht von {FROM_USER} für {TO_USER} vor.
+There is new contact message from {FROM_USER} to {TO_USER}.
 
 -------
 {VALUES}-------
@@ -8,12 +8,12 @@ Es liegt eine neue Kontakt-Nachricht von {FROM_USER} für {TO_USER} vor.
 
 -----------
 
-Sie erhalten diese Nachricht, weil Sie sich für Benachrichtigungen eingetrage haben, wenn hier {X_ITEM_TYPE} Kommentare veröffentlicht wurden.
+You are receiving this message because you selected to be notified when comments are added to this {X_ITEM_TYPE}.
 
-Sollte dies ein Fehler sein oder Sie wünschen keine weiteren Benachrichtigungen über neue Kommentare, aktualisieren Sie bitte Ihre Benachrichtigungsoptionen über den nachfolgenden Link:
+If this is an error or you wish not to receive further such notifications, please update your subscriptions by visiting the link below:
 {X_UNSUBSCRIBE_URL}
 
-Diese Nachricht wurde automatisch erstellt. Bitte antworten Sie nicht darauf.
+Please do not reply to this message.
 
 -----------
 {X_SITENAME} ({X_SITEURL}) 

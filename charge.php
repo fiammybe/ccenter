@@ -1,28 +1,10 @@
 <?php
-/**
- * ccenter is a form module
- * 
- * File: charge.php
- * 
- * index-page of ccenter module
- * 
- * @copyright	Copyright QM-B (Steffen Flohrer) 2011
- * @license		http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License (GPL)
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		0.94
- * @author		Nobuhiro Yasutomi
- * @package		ccenter
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		1.00
- * @author		QM-B
- * @package		ccenter
- * @version		$Id$
- * 
- */
+// show message list
+// $Id$
 
-include "header.php";
+include "../../mainfile.php";
+include "functions.php";
+include_once ICMS_ROOT_PATH.'/class/pagenav.php';
 
 $xoopsOption['template_main'] = "ccenter_charge.html";
 $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
@@ -62,11 +44,11 @@ $max = icms::$module->config['max_lists'];
 $start = isset($_GET['start']) ? (int) $_GET['start'] : 0;
 
 $nav = new icms_view_PageNav($total, $max, $start, "start");
-$icmsTpl->assign('pagenav', $nav->renderNav());
-$icmsTpl->assign('statctrl', $listctrl->renderStat());
-$icmsTpl->assign('total', $total);
-$icmsTpl->assign('xoops_pagetitle', htmlspecialchars(icms::$module->getVar('name')." - "._MD_CCENTER_CHARGE));
-$icmsTpl->assign('labels', $listctrl->getLabels($labels));
+$xoopsTpl->assign('pagenav', $nav->renderNav());
+$xoopsTpl->assign('statctrl', $listctrl->renderStat());
+$xoopsTpl->assign('total', $total);
+$xoopsTpl->assign('xoops_pagetitle', htmlspecialchars(icms::$module->getVar('name')." - "._MD_CCENTER_CHARGE));
+$xoopsTpl->assign('labels', $listctrl->getLabels($labels));
 
 $res = icms::$xoopsDB->query("SELECT m.*, title $sqlx ".$listctrl->sqlorder(), $max, $start);
 
@@ -74,6 +56,6 @@ $qlist = array();
 while ($data = icms::$xoopsDB->fetchArray($res)) {
     $qlist[] = cc_message_entry($data);
 }
-$icmsTpl->assign('qlist', $qlist);
+$xoopsTpl->assign('qlist', $qlist);
 
 include ICMS_ROOT_PATH."/footer.php";

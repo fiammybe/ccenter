@@ -1,5 +1,5 @@
 <?php
-// $Id: admin.php,v 1.4 2011-03-14 13:59:16 nobu Exp $
+// $Id$
 
 define('_AM_FORM_EDIT', 'Edit contact form');
 define('_AM_FORM_NEW', 'Neues Kontaktformular erstellen');
@@ -74,34 +74,4 @@ reply_comment=Nachricht hinzufügen in automatische E-Mail
 reply_use_comtpl=Hinzufügen Nachricht an e-Mail-Vorlage
 others=Andere Variablen ("Name=Value"-Stil)
 ');
-
-/**
-*
-* added in 1.0
-*
-*/
-
-// Requirements
-define("_AM_CCENTER_REQUIREMENTS", "'Contact Center' Voraussetzungen");
-define("_AM_CCENTER_REQUIREMENTS_INFO", "Wir haben Ihr System überprüft und festgestellt, das nicht alle Anforderungen erfüllt sind um das Kontakt Modul benutzen zu können. Hier sind die benötigten Anforderungen:");
-define("_AM_CCENTER_REQUIREMENTS_ICMS_BUILD", "'Contact Center' benötigt ImpressCMS 1.3 final oder höher.");
-define("_AM_CCENTER_REQUIREMENTS_SUPPORT", "Sollten Sie Fragen oder Bedenken haben, besuchen Sie einfach unser Forum <a href='http://community.impresscms.org/modules/newbb/viewforum.php?forum=9'>impresscms.org</a>.");
-
-// Select box for sprocket-module
-define("_AM_CCENTER_ITEM_FILTER_BY_TAG", "Filtern nach Tag");
-define("_AM_CCENTER_ITEM_ALL_ITEMS", "-- ALLE --");
-
-
-define('_AM_CCENTER_FORM_ONLINE', 'online');
-define('_AM_CCENTER_FORM_OFFLINE', 'offline');
-
-define('_AM_CCENTER_INDEXPAGE_EDIT', 'Indexseite bearbeiten');
-define('_AM_CCENTER_INDEXPAGE_MODIFIED', 'Indexseite wurde geändert');
-
-define('_AM_CCENTER_FORM_CREATE', 'Neues Kontaktformular erstellen');
-define('_AM_CCENTER_FORM_MODIFIED', 'Formular gespeichert');
-define('_AM_CCENTER_FORM_CREATED', 'Formular erstellt');
-
-define('_AM_CCENTER_PREVIEW', 'Vorschau');
-define('_AM_CCENTER_FORM_VIEW', 'Anschauen');
-define('_AM_CCENTER_FORM_CLONE', 'duplizieren');
+?>

@@ -1,5 +1,5 @@
 <?php
-// $Id: comment_reply.php,v 1.5 2011-03-15 13:50:36 nobu Exp $
+// $Id$
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //
@@ -25,7 +25,7 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
 include '../../mainfile.php';
-include '/include/functions.php';
+include 'functions.php';
 
 $com_itemid = isset($_GET['com_itemid']) ? intval($_GET['com_itemid']) : 0;
 $com_id = isset($_GET['com_id']) ? intval($_GET['com_id']) : 0;

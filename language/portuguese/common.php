@@ -1,5 +1,5 @@
 <?php
-// $Id: common.php,v 1.2 2009-07-07 12:00:42 nobu Exp $
+// $Id$
 // common user and admin
 // Traduzido para o Portugues do Brasil por: Miraldo Antoninho Ohse (m_ohse@hotmail.com).
 

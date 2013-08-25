@@ -1,5 +1,5 @@
 <?php
-// $Id: admin.php,v 1.6 2011-03-14 13:59:17 nobu Exp $
+// $Id$
 // Traduzido para o Portugues do Brasil por: Miraldo Antoninho Ohse (m_ohse@hotmail.com).
 
 define('_AM_FORM_EDIT', 'Editar o formulário de contato');

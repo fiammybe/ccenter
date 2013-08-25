@@ -1,49 +1,30 @@
 <?php
-/**
-* ccenter is a form module
-*
-* File: /admin/help.php
-*
-* show language help.html
-*
-* @copyright	Copyright QM-B (Steffen Flohrer) 2011
-* @license		http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License (GPL)
-*
-* ----------------------------------------------------------------------------------------------------------
-* 				ccenter 
-* @since		0.94
-* @author		Nobuhiro Yasutomi
-* @package		ccenter
-* ----------------------------------------------------------------------------------------------------------
-* 				ccenter
-* @since		1.00
-* @author		QM-B
-* @version		$Id$
-* @package		ccenter
-* @version		$Id: help.php,v 1.3 2011-03-14 13:59:16 nobu Exp $
-*/
+# show language help.html
+# $Id$
 
-include 'admin_header.php';
-
+include '../../../include/cp_header.php';
 global $mydirpath, $mydirname;
 $mydirpath = dirname(dirname(__FILE__));
-$mydirname = icms::$module -> getVar( 'dirname' );
+$mydirname = basename($mydirpath);
 
 // for compat older PHP 4.x
-//if(!function_exists("file_get_contents")) {
-//   function file_get_contents($filename) {
-//       $fp = fopen($filename, "rb");
-//       if (!$fp) return false;
-//       $contents = "";
-//       while (! feof($fp)) {
-//	   $contents .= fread($fp, 4096);
-//       }
-//       return $contents;
-//   }
-//}
+if(!function_exists("file_get_contents")) {
+   function file_get_contents($filename) {
+       $fp = fopen($filename, "rb");
+       if (!$fp) return false;
+       $contents = "";
+       while (! feof($fp)) {
+	   $contents .= fread($fp, 4096);
+       }
+       return $contents;
+   }
+}
 
 icms_cp_header();
-ccenter_adminmenu( 3, _MI_CCENTER_HELP );
+icms::$module->displayAdminMenu(0);
+if (function_exists('Legacy_function_stylesheet')) {
+    echo "<link href=\"".ICMS_URL."/modules/legacyRender/admin/css.php?file=module.css&amp;dirname=legacy\" media=\"all\" type=\"text/css\" rel=\"stylesheet\"/>\n";
+}
 
 $file = isset($_GET['file']) ? icms_core_DataFilter::stripSlashesGPC($_GET['file']) : "help.html";
 display_lang_file($file);
@@ -96,3 +77,4 @@ function display_lang_file($file, $link='') {
     echo '<div class="help">'.preg_replace($pat, $rep, $b).'</div>';
 }
 
+?>

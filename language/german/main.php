@@ -1,5 +1,5 @@
 <?php
-// $Id: main.php,v 1.2 2011-03-14 13:59:17 nobu Exp $
+// $Id$
 
 define('_MD_EVALS','Evaluate');
 define('_MD_COUNT','Anzahl');
@@ -64,12 +64,4 @@ define('_MD_EVAL_VAL_MAX','Sehr gut');
 define("_MD_EXPORT_CHARSET", "UTF-8");
 define('_MD_EXPORT_CSV','CSV Format');
 define('_MD_EXPORT_RANGE','Auswahl');
-
-/**
-*
-* added in 1.0
-*
-*/
-
-define('_CO_CCENTER_FORMS_CATS', 'Kategorien');
-define('_CO_CCENTER_NO_CATS_TO_DISPLAY', 'Keine Kategorien vorhanden');
+?>

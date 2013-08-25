@@ -1,5 +1,5 @@
 <?php
-// $Id: main.php,v 1.3 2011-03-14 13:59:17 nobu Exp $
+// $Id$
 // Traduzido para o Portugues do Brasil por: Miraldo Antoninho Ohse (m_ohse@hotmail.com).
 
 define('_MD_EVALS','Avaliação');

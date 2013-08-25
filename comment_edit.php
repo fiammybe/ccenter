@@ -1,5 +1,5 @@
 <?php
-// $Id: comment_edit.php,v 1.3 2011-03-15 13:50:36 nobu Exp $
+// $Id$
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //
@@ -25,12 +25,10 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
 include '../../mainfile.php';
+include 'functions.php';
 
-$com_itemid = isset( $_GET['com_itemid'] ) ? intval( $_GET['com_itemid'] ) : 0;
-if ( $com_itemid > 0 ) {
-    // Get form title
-    $sql = 'SELECT title FROM ' . icms::$xoopsDB -> prefix( 'ccenter_form' ) . ' WHERE formid=' . $com_itemid;
-    $row = icms::$xoopsDB -> fetchArray( icms::$xoopsDB -> query( $sql ) );
-    $com_replytitle = $row['title'];
-    include ICMS_ROOT_PATH . '/include/comment_new.php';
-}
+$com_itemid = isset($_GET['com_itemid']) ? intval($_GET['com_itemid']) : 0;
+$com_id = isset($_GET['com_id']) ? intval($_GET['com_id']) : 0;
+cc_get_message(cc_check_comment($com_itemid, $com_id));
+include ICMS_ROOT_PATH.'/include/comment_edit.php';
+?>

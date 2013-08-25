@@ -16,60 +16,59 @@ pre { color: #600000; }
   <h4>Contact Center module</h4>
   <ul>
   <li><a href="#intro">Abstruct</a></li>
-  <li><a href="#form">Formular Definitionen</a></li>
+  <li><a href="#form">Form defunitions</a></li>
   <li><a href="#custom">Custom Form</a></li>
-  <li><a href="#config">Einstellungen</a></li>
+  <li><a href="#config">Preferences</a></li>
   <li><a href="#attr">Default option variables</a></li>
-  <li><a href="#tips">Tips zur Benutzung</a></li>
-  <li><a href="#changes">Änderungen</a></li>
+  <li><a href="#tips">Tips for using</a></li>
+  <li><a href="#changes">Changes</a></li>
   </ul>
 
   <hr>
 
   <a name="intro"></a><h5>Abstruct of Contact Center module</h5>
 
-  <p>"Contact Center" ist ein Formular-Modul wie z.B. für ein Kontaktformular.
-    Dieses Modul hat folgende Funktionalitäten:</p>
+  <p>"Contact Center" is a module for web forms like "Contact us".
+    This module has features following:</p>
   <ul>
-    <li>Erstellung anpassbarer / flexibler Formulare</li>
-    <li>Kontaktnachrichten in der Datenbank speichern</li>
-    <li>Verwaltung der gesendeter Daten</li>
-    <li>Auswertung der übermittelten Daten</li>
+    <li>Handling highly customizable contact forms</li>
+    <li>Store contact message in Database</li>
+    <li>Response management</li>
+    <li>Evaluate contact work</li>
   </ul>
 
-  <p>Der grösste Unterschied zu einem gewöhnlichen Formular-Modul:
-  	Dieses Modul speichert die abgesendeten Daten in der Datenbank und unterstützt das Auswerten der Daten.
+  <p>Most different point to ordinay form mail module,
+    This module store in database and support and following contact messages.
   </p>
 
-  <a name="form"></a><h5>Formular Definitionen</h5>
+  <a name="form"></a><h5>Form defunitions</h5>
 
-  Ein neues Formular erstellt/ändert man in der Administration über das obere Menü "Forms".
-  Die Formumar Definitionen befolgen folgende Syntax:
+  Form define in admin menu at "Forms". The "Form defunitions" following syntax.
   <blockquote class="bnf">
-      <b>line ::= label["*"][,type][,attribute...][,argument...]</b><p />
+      line ::= label["*"][,type][,attribute...][,argument...]<p />
       type ::= {text|checkbox|radio|textarea|select|const|hidden|mail|multi|file}<br />
       argument ::= [value ["+"] "="] display-value<br />
       attribute ::= aname "=" value<br />
       aname ::= {size|rows|maxlength|cols|prop|check}
   </blockquote>
   <ul>
-    <li>"*" bedeutet "erforderlich"</li>
-    <li>"#" bedeutet das Hinzufügen einer Beschreibung in das Formular</li>
-    <li>"," ist ein seperator</li>
+    <li>"*" mean required</li>
+    <li>"#" mean adding description in form</li>
+    <li>"," is a seperater</li>
     <li>argument abbreviation value, that is equivalent display-value</li>
-    <li>"+" In auswahl Typen (checkbox, radio, select) per default ausgewählte Wert</li>
+    <li>"+" means default selection in selecting types (checkbox, radio, select)</li>
     <li>The other arguments are makes default value in text types(text, textarea)</li>
-    <li>Gültige Attribute hängen von den Typen ab (z.B. text: "size=n", textarea: "cols=n" "rows=n")</li>
-    <li>Mit dem "check" Attribut überprüft man die Eingabe eines Feldes wie zB. (*: erforderlich,  nach dem Namen des Feldes; "num": nur Ziffern zulassen, "mail": Email Format)</li>
+    <li>Valid attribute depend types (e.g. text: "size=n", textarea: "cols=n" "rows=n")</li>
+    <li>"check" attribute mean checking input value (require: same as "*" follow label, "num": numeirc, "mail": mail format, others: using reguler expressions)</li>
     <li>type of "checkbox" or "radio" argument value makes "*"
       that is mean 'etc' field. And it takes a text input field.</li>
-    <li>Typ "mail" ist ein spezielles Eingabefeld. Es überprüft automatisch die Gütigkeit des Feldes.</li>
-    <li>Typ "file" bedeutet das hochladen einer Datei (Anhang) über das Formular</li>
+    <li>type of "mail" handle special input field. That is makes automaticaly confirm field, and check match value. That is only one use in a form.</li>
+    <li>type of "file" mean upload attachment file</li>
     <li>
       Default value string can include variables expand user information.
       The variables like <tt>{X_<em>LABEL</em>}</tt> style, <em>LABEL</em>
       will be userinfo capitalized field name. (e.g. {X_UNAME}, {X_NAME}, {X_EMAIL}, {X_BIO})
-      Gäste erhalten einen leeren string.
+      Guest user will be empty string.
     </li>
     <li>
       In 'Normal[bb]' type form, Form defunitions item name start "-", show that same line with previus item.
@@ -79,15 +78,15 @@ pre { color: #600000; }
     </li>
   </ul>
 
-  <h6>Beispiele:</h6>
+  <h6>Examples:</h6>
 
   <blockquote>
   <form>
     <table border="0" cellspacing="1" cellpadding="4" class="outer">
-      <tr class="head"><th>Definiton</th><th>Repräsentiert</th><th>Beschreibung</th></tr>
-      <tr class="even"><td>Name*</td><td>Name* <input name="samp1" /></td><td> Das "*" macht die Eingabe dieses Feldes erfordelich. Typ wird autmatisch auf "text" gesetzt.</td></tr>
-      <tr class="odd"><td>Name*,size=5</td><td>Name* <input name="samp2" size="5" /></td><td>Hier wird das Attribut verwenden um die Länge zu bestimmen</td></tr>
-      <tr class="even"><td>Name*,size=10,Default,#Beschreibung</td><td>Name* <input name="samp3" size="10" value="Default" /> Beschreibung</td><td>Das Argument "#" als Prefix bedeutet dass "Beschreibung" als Text angezeigt wird.</td></tr>
+      <tr class="head"><th>Define</th><th>Represent</th><th>Description</th></tr>
+      <tr class="even"><td>Name*</td><td>Name* <input name="samp1" /></td><td>The item name add "*", makes required. Abbreviat type mean "text".</td></tr>
+      <tr class="odd"><td>Name*,size=5</td><td>Name* <input name="samp2" size="5" /></td><td>Setting attribute(size of input field).</td></tr>
+      <tr class="even"><td>Name*,size=10,Default,#Comment</td><td>Name* <input name="samp3" size="10" value="Default" /> Comment</td><td>Argument prefix makes "#" following value makes display comment.</td></tr>
       <tr class="odd"><td>Name,size=10,check=reqire,{X_NAME},#Comment</td><td>Name <input name="samp3" size="10" value="expand your name"/> Comment</td><td>checking requirement like this. Default value  <tt>{X_NAME}</tt> are expand user information.</td></tr>
       <tr class="even"><td>Selection,radio,Item1+,Item2&lt;br/&gt;,*=others</td><td>Selection <input type="radio" name="samp4" value="Item1" checked /> Item1
 	  &nbsp; <input type="radio" name="samp4" value="Item2" /> Item2<br/>
@@ -96,18 +95,18 @@ pre { color: #600000; }
       <tr class="odd"><td>Selection,checkbox,Item1+,Item2,Item3</td><td>Selection <input type="checkbox" name="samp5_1" checked /> Item1 &nbsp;
 	  <input type="checkbox" name="samp5_2" /> Item2 &nbsp;
 	  <input type="checkbox" name="samp5_3" /> Item3</td>
-	<td>"+" bedeutet dass das Item1 per default als ausgewählt angezeigt wird.</td></tr>
+	<td>Selection value default checked adding "+".</td></tr>
       <tr class="even"><td>Selection,select,Item1,Item2,Item3</td><td>Selection <select name="samp6"><option>Item1</option><option>Item2</option><option>Item3</option></select></td><td></td></tr>
       <tr class="odd"><td>Label,const,value</td><td><em>Label value</em></td><td>Show the value as is and that input value.</td></tr>
-      <tr class="even"><td>Label,hidden,value</td><td><em>(Im Formular nicht angezeigt)</em></td><td>This is handle input value.</td></tr>
-      <tr class="odd"><td>#Kommentar/Beschreibung</td><td>Kommentar/Beschreibung</td><td></td></tr>
+      <tr class="even"><td>Label,hidden,value</td><td><em>(Not display in form)</em></td><td>This is handle input value.</td></tr>
+      <tr class="odd"><td>#Comment</td><td>Comment</td><td></td></tr>
     </table>
   </form>
   </blockquote>
 
   <a name="custom"></a><h5>Custom Form</h5>
 
-  <p>"Beschreibung" use template in "Beschreibungstype" settings
+  <p>"Description" use template in "Description type" settings
     not "Normal[bb]". In "template" types insert form element
     make variables like <tt>{Name}</tt> style.</p>
 
@@ -115,7 +114,7 @@ pre { color: #600000; }
     <table border="0" cellspacing="1" cellpadding="4" class="outer">
       <tr class="head"><th>variables</th><th>Description</th></tr>
       <tr class="even"><td>{FORM_ATTR}</td><td>form attributes</td></tr>
-      <tr class="odd"><td>{SUBMIT}</td><td>Absenden Schaltfl&auml;che</td></tr>
+      <tr class="odd"><td>{SUBMIT}</td><td>Submit button</td></tr>
       <tr class="even"><td>{BACK}</td><td>Re-Edit button</td></tr>
       <tr class="odd"><td>{CHECK_SCRIPT}</td><td>Checking JavaScript</td></tr>
       <tr class="even"><td>{Name}</td><td>Input field element of Name</td></tr>
@@ -133,10 +132,11 @@ Item-n: {Item-n}
 {SUBMIT} {BACK}
 &lt;/form&gt;
 {CHECK_SCRIPT}</pre>
-  <li><tt>[desc]Description[/desc]</tt> bedeutet dass die "Description" auf der Eingabeseite angezeigt wird und nicht auf der Bestätigungsseite.</li>
+  <li><tt>[desc]Description[/desc]</tt> mean display "Description" only
+    Input page, Not display in confirm page.</li>
   <li>{TO_UNAME}, {TO_NAME} can use in normal description.</li>
-  <li>"Overall template" bedeutet dass man nicht die Impresscms Templtes nutzen will. Es wird direkt als HTML Seite angezeigt.</li>
-  <li>"Wide template" Ob diese Einstllung funktioniert hängt von dem Theme ab. Es seetzt die smarty Variablen <tt>$xoops_show{c,l,r}block</tt> auf 0.</li>
+  <li>"Overall template" not use ICMS themes. Display direct HTML page.</li>
+  <li>"Wide template" settings makes setting smarty variables <tt>$xoops_show{c,l,r}block</tt> to 0. This function to be work need to depend themes.</li>
   </ul>
   </blockquote>
 
@@ -168,21 +168,21 @@ Done: c</pre></td><td>the Format as: Display-label: [status1[,status2...]], incl
 
     <table border="0" cellspacing="1" cellpadding="4" class="outer">
       <tr class="head"><th>Attribute Name</th><th>Setting/Default</th><th>Description</th></tr>
-      <tr class="even"><td class="head">size</td><td><u>0</u></td><td>Länge des Eingabefeldes</td></tr>
-      <tr class="odd"><td class="head">maxlength</td><td><u>0</u></td><td>Maximale Länge der Eingabe</td></tr>
-      <tr class="even"><td class="head">rows</td><td><u>0</u></td><td>Anzahl der Zeilen in einem Textfeld</td></tr>
-      <tr class="odd"><td class="head">cols</td><td><u>0</u></td><td>Anzahl der Spalten in einem Textfeld</td></tr>
+      <tr class="even"><td class="head">size</td><td><u>0</u></td><td>size of text input</td></tr>
+      <tr class="odd"><td class="head">maxlength</td><td><u>0</u></td><td>maxlength of text input</td></tr>
+      <tr class="even"><td class="head">rows</td><td><u>0</u></td><td>rows number of textarea</td></tr>
+      <tr class="odd"><td class="head">cols</td><td><u>0</u></td><td>columns number of textarea</td></tr>
       <tr class="even"><td class="head">notify_with_email</td><td><u>0</u></td><td>When setting 1 email address include in notification</td></tr>
       <tr class="odd"><td class="head">export_charset</td><td><u>UTF-8</u></td><td>force setting encoding for CSV format file output.</td></tr>
-      <tr class="even"><td class="head">redirect</td><td>URI</td><td>Gehe zur URL nach dem Absenden des Formulares.</td></tr>
+      <tr class="even"><td class="head">redirect</td><td>URI</td><td>Move to page URI when after sending form.</td></tr>
       <tr class="odd"><td class="head">other names</td><td>RegExp</td><td>Input format checking regular expressions
-	  <p>Beispiel: Ziffernüberprüfung <tt>numeric=[-+]?[0-9]+</tt>;, Telefonnummer <tt>tel="\+?[0-9][0-9-,]*[0-9]"</tt><br />In Formularen die Attribute wie folg benutzen <tt>check=tel</tt>.</p>
+	  <p>Example: Numeric check <tt>numeric=[-+]?[0-9]+</tt>, Phone Number <tt>tel="\+?[0-9][0-9-,]*[0-9]"</tt><br />Using in Contact form's "Form defunisions" attribute like <tt>check=tel</tt>.</p>
 	  <p>Regular expressions using JavaScript acceptable range. (Server side use perl regexp, but client side use JavaScript)</p>
       </td></tr>
     </table>
   <blockquote>
 
-  <a name="tips"></a><h5>Tips zur Benutzung</h5>
+  <a name="tips"></a><h5>Tips for using</h5>
 
   <h6>Notification</h6>
   <p>
@@ -192,13 +192,13 @@ Done: c</pre></td><td>the Format as: Display-label: [status1[,status2...]], incl
   </p>
   <ul>
     <li>Event notification method is use user settings.</li>
-    <li>Contact Person setting 'None', notification to Kontaktgruppe.</li>
+    <li>Contact Person setting 'None', notification to Contact group.</li>
     <li>Contact Person subscribe notification setting at the message.</li>
-    <li>Kontaktgruppe member can setting notification each forms.</li>
+    <li>Contact Group member can setting notification each forms.</li>
     <li>Administrator can setting notification for all message.</li>
   </ul>
 
-  <h6>Wichtig für die Sicherheit</h6>
+  <h6>Note for Security</h6>
   <p>In this module using ICMS comment system.
     When you use Comment custamization (modules/blocks/plugins/hacks...)
     to display, need to carefully. Comments in this module, include private
@@ -239,11 +239,23 @@ Done: c</pre></td><td>the Format as: Display-label: [status1[,status2...]], incl
   <dd>
 	<ul>
 		<li>ongoing update-process for icms v1.3+</li>
-		<li>Menu structure in ACP adjusted to module standard</li>
-		<li>menu-structure, update-/install-functions adjusted to icms-standard</li>
 		<li>!!! Not longer compatible to XOOPS or icms &lt;v1.3 !!!</li>
 		<li>new module-icon (Thx Rene)</li>
-		<li>removed altsys-compatibility as long it's not supported</li>
+    </ul>
+  </dd>
+  <dt>2011-03-15 ccenter 0.94</dt>
+  <dd>
+    <ul>
+      <li>Fix security vulnerability (thx Hosiryuhosi)</li>
+      <li>Fix conflict with altsys language manager</li>
+      <li>Fix malfunction rename module folder</li>
+    </ul>
+  </dd>
+  <dt>2009-11-15 ccenter 0.93</dt>
+  <dd>
+    <ul>
+      <li>Additional message in notification and/or email template for each forms</li>
+      <li>Option variables handling reivced</li>
     </ul>
   </dd>
   <dt>2009-07-04 ccenter 0.92</dt>
@@ -414,6 +426,6 @@ Done: c</pre></td><td>the Format as: Display-label: [status1[,status2...]], incl
 <hr/>
 <aliress>Nobuhiro YASUTOMI &lt;<a href="mailto:nobuhiro.yasutomi@nifty.ne.jp">nobuhiro.yasutomi@nifty.ne.jp</a>&gt;</aliress>
 MySite Users <a href="http://myht.org/">http://myht.org/</a><br/>
-$Id: help.html,v 1.2 2009-07-04 05:39:23 nobu Exp $
+$Id: help.html,v 1.17 2011-03-15 13:53:02 nobu Exp $
 </body>
 </html>

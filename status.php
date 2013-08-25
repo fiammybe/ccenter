@@ -1,28 +1,9 @@
 <?php
-/**
- * ccenter is a form module
- * 
- * File: status.php
- * 
- * changing message-status
- * 
- * @copyright	Copyright QM-B (Steffen Flohrer) 2011
- * @license		http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License (GPL)
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		0.94
- * @author		Nobuhiro Yasutomi
- * @package		ccenter
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		1.00
- * @author		QM-B
- * @package		ccenter
- * @version		$Id$
- * 
- */
+// Changing message status
+// $Id$
 
-include "header.php";
+include "../../mainfile.php";
+include "functions.php";
 
 $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
 $msgid = (int) $_POST['id'];
@@ -47,7 +28,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 	$log = _MD_EVALS." ($eval)";
 	$log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[_STATUS_CLOSE]);
 	$evalmsg = _MD_EVALS." ($eval)\n$com";
-	$tags = array('X_COMMENT_URL'=>ICMS_URL."/modules/" . icms::$module -> getVar( 'dirname' ) . "/message.php?id=$msgid\n\n".$evalmsg);
+	$tags = array('X_COMMENT_URL'=>ICMS_URL."/modules/".basename(dirname(__FILE__))."/message.php?id=$msgid\n\n".$evalmsg);
 	$notification_handler =& icms::handler('icms_data_notification');
 		$notification_handler->triggerEvent('message', $msgid, 'comment', $tags);
 	cc_log_message($formid, $log, $msgid);

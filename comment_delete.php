@@ -1,5 +1,5 @@
 <?php
-// $Id: comment_delete.php,v 1.1 2007-02-23 05:27:27 nobu Exp $
+// $Id$
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //

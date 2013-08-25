@@ -1,49 +1,13 @@
 <?php
-/**
-* ccenter is a form module
-*
-* File: /admin/msgadmin.php
-*
-* adminstration messages
-* 
-* @copyright	Copyright QM-B (Steffen Flohrer) 2011
-* @license		http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License (GPL)
-*
-* ----------------------------------------------------------------------------------------------------------
-* 				ccenter 
-* @since		0.94
-* @author		Nobuhiro Yasutomi
-* @package		ccenter
-* ----------------------------------------------------------------------------------------------------------
-* 				ccenter
-* @since		1.00
-* @author		QM-B
-* @version		$Id$
-* @package		ccenter
-* @version		$Id$
-*/
+// adminstration messages
+include '../../../include/cp_header.php';
+include '../functions.php';
+include_once 'myformselect.php';
 
-include 'admin_header.php';
-
-$clean_msgid = $clean_op = $valid_op = '';
-$ccenter_message_handler = icms_getModuleHandler('message', basename(dirname(dirname(__FILE__))), "ccenter");
-
-$op = isset($_GET['op']) ? filter_input(INPUT_GET, 'op') : '';
-if (isset($_POST['op'])) $op = filter_input(INPUT_POST, 'op');
-$msgid = isset($_REQUEST['msgid']) ? (int) $_REQUEST['msgid'] : 0;
-
-$valid_op = array ('mod','changedField','addform','del','view','visible', 'changeWeight', '');
-
-if (isset($_GET['op'])) $clean_op = htmlentities($_GET['op']);
-if (isset($_POST['op'])) $clean_op = htmlentities($_POST['op']);
-
-$clean_msgid = isset($_GET['msgid']) ? (int) $_GET['msgid'] : 0 ;
-$clean_tag_id = isset($_GET['tag_id']) ? intval($_GET['tag_id']) : 0 ;
-
-$op = isset($_REQUEST['op']) ? icms_core_DataFilter::stripSlashesGPC($_REQUEST['op']) : '';
+$op = isset($_REQUEST['op'])?$myts->stripSlashesGPC($_REQUEST['op']):'';
 
 if (isset($_POST['store'])) {
-    $msgid = (int) $_POST['msgid'];
+    $msgid = filter_input(INPUT_POST, "msgid", FILTER_SANITIZE_NUMBER_INT);
     $touid = (int) $_POST['touid'];
     $stat = icms_core_DataFilter::stripSlashesGPC($_POST['status']);
     $res = icms::$xoopsDB->query("SELECT * FROM ".CCMES." WHERE msgid=".$msgid);
@@ -67,7 +31,7 @@ if (isset($_POST['store'])) {
 	    $sets[] = 'mtime='.time();
 	    $res = icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(",", $sets)." WHERE msgid=".$msgid);
 	    if ($res && $touid) { // switch person in charge
-		$notification_handler = icms::handler( 'icms_data_notification' );
+		$notification_handler =& xoops_gethandler('notification');
 		$notification_handler->subscribe('message', $msgid, 'comment', null, null, $touid);
 		$notification_handler->subscribe('message', $msgid, 'status', null, null, $touid);
 	    }
@@ -86,93 +50,120 @@ if (isset($_POST['store'])) {
     redirect_header($back, 1, _AM_MSG_UPDATED);
 }
 
+icms_cp_header();
 
+icms::$module->displayAdminMenu(1);
 
+if (empty($_GET['msgid'])) msg_list();
+else msg_detail(intval($_GET['msgid']));
 
-if ( in_array( $clean_op, $valid_op, true ) ) {
-  switch ($clean_op) {
-	case "changedField":
-  		icms_cp_header();
-  		edititem($clean_msgid);
-  		break;
-  	case "del":
-        $controller = new icms_ipf_Controller($ccenter_message_handler);
-  		$controller->handleObjectDeletion();
-  		break;
-  	case "view":
-  		$messageObj = $ccenter_message_handler->get($clean_msgid);
-  		icms_cp_header();
-  		$messageObj->displaySingleObject();
-  		break;
-  	default:
-  		icms_cp_header();
+icms_cp_footer();
 
-  		$ccenterModule->displayAdminMenu(1, _AM_CCENTER_MESSAGES);
-		
-		icms_loadLanguageFile('ccenter', 'main');
-		
-		$criteria = '';
-		
-		// display a tag select filter (if the Sprockets module is installed)
-		$sprocketsModule = icms_getModuleInfo('sprockets');
-		
-		if ($sprocketsModule) {
-			$tag_select_box = '';
-			$taglink_array = $tagged_item_list = array();
-			$sprockets_tag_handler = icms_getModuleHandler('tag', $sprocketsModule->dirname(),
-				'sprockets');
-			$sprockets_taglink_handler = icms_getModuleHandler('taglink', 
-					$sprocketsModule->dirname(), 'sprockets');
-			$ccenterModule = icms_getModuleInfo( icms::$module -> getVar( 'dirname' ) );
-			
-			$tag_select_box = $sprockets_tag_handler->getTagSelectBox('index.php', $clean_tag_id,
-				_AM_CCENTER_ITEM_ALL_ITEMS);
-			if (!empty($tag_select_box)) {
-				echo '<h3>' . _AM_CCENTER_FILTER_FORM_BY_TAG . '</h3>';
-				echo $tag_select_box;
-			}
-			
-			if ($clean_tag_id) {
-				
-				// get a list of item IDs belonging to this tag
-				$criteria = new icms_db_criteria_Compo();
-				$criteria->add(new icms_db_criteria_Item('tid', $clean_tag_id));
-				$criteria->add(new icms_db_criteria_Item('mid', $ccenterModule->mid()));
-				$criteria->add(new icms_db_criteria_Item('message', 'message'));
-				$taglink_array = $sprockets_taglink_handler->getObjects($criteria);
-				foreach ($taglink_array as $taglink) {
-					$tagged_item_list[] = $taglink->getVar('iid');
-				}
-				$tagged_item_list = "('" . implode("','", $tagged_item_list) . "')";
-				
-				// use the list to filter the table
-				$criteria = new icms_db_criteria_Compo();
-				$criteria->add(new icms_db_criteria_Item('formid', $tagged_item_list, 'IN'));
-			}
-		}
-		
-		if (empty($criteria)) {
-			$criteria = null;
-		}
+function msg_list() {
+    global $msg_status;
 
-  		$objectTable = new icms_ipf_view_Table( $ccenter_message_handler, $criteria );
-		$objectTable -> addColumn( new icms_ipf_view_Column( 'msgid' ) );
-		$objectTable -> addColumn( new icms_ipf_view_Column( 'ctime' ) );
-		$objectTable -> addColumn( new icms_ipf_view_Column( 'tag' ) );
-		$objectTable -> addColumn( new icms_ipf_view_Column( 'fidref' ) );
-  		$objectTable -> addColumn( new icms_ipf_view_Column( 'title' ) );
-		$objectTable -> addColumn( new icms_ipf_view_Column( 'status' ) );
-		
-  		$objectTable -> addActionButton( 'changedField', 'msgadm.php?op=changedField', _AM_CCENTER_MESSAGE_MOD );
-		$objectTable -> addActionButton( 'view', 'msgadm.php?op=view', _AM_CCENTER_MESSAGE_MOD );
-  		
-		$objectTable -> addCustomAction( 'getViewItemLink' );
-		
-		$icmsAdminTpl -> assign( 'ccenter_message_table', $objectTable->fetch() );
-  		$icmsAdminTpl -> display( 'db:ccenter_admin_message.html' );
-  		break;
-  }
-  icms_cp_footer();
+    $labels=array('mtime'=>_AM_FORM_MTIME, 'status'=>_AM_MSG_STATUS,
+		  'fidref'=>_AM_FORM_TITLE, 'cfrom'=>_AM_MSG_FROM,
+		  'uname'=>_AM_MSG_CHARGE, 'comms'=>_AM_MSG_COMMS,
+		  'ope'=>_AM_OPERATION);
+    $orders=array('mtime'=>'ASC', 'fidref'=>'ASC', 'uname'=>'ASC',
+		  'status'=>'ASC', 'uid'=>'ASC', 'orders'=>array('mtime'));
+
+    $listctrl = new ListCtrl('msgadm', $orders);
+
+    $start = isset($_GET['start']) ? (int) $_GET['start'] : 0;
+    $search = isset($_GET['q']) ? icms_core_DataFilter::stripSlashesGPC($_GET['q']) : '';
+    $max = icms::$module->config['max_lists'];
+
+    $users = icms::$xoopsDB->prefix('users');
+    $comms = icms::$xoopsDB->prefix('xoopscomments');
+    $mid = icms::$module->getVar('mid');
+    $sql0 = "FROM ".CCMES." m LEFT JOIN ".FORMS." ON fidref=formid
+LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
+    $sql1 = "LEFT JOIN $comms ON com_modid=$mid AND com_itemid=msgid";
+    $sql2 = "WHERE ".$listctrl->sqlcondition();
+    $formid = isset($_REQUEST['formid'])?intval($_REQUEST['formid']):0;
+    if ($formid) $sql2 .= " AND fidref=$formid";
+    if ($search) $sql2 .= " AND CONCAT(body,' ',m.email) like ".icms::$xoopsDB->quoteString("%$search%");
+
+    $res = icms::$xoopsDB->query("SELECT count(msgid) $sql0 $sql2");
+    list($total) = icms::$xoopsDB->fetchRow($res);
+    $args = $formid?"formid=$formid":"";
+    $nav = new icms_view_PageNav($total, $max, $start, "start", $args);
+
+    $res = icms::$xoopsDB->query("SELECT m.*,title,u.uname, f.uname cfrom, count(com_id) comms $sql0 $sql1 $sql2 GROUP BY msgid".$listctrl->sqlorder(), $max, $start);
+    echo "<style>td.num { text-align: right; }</style>\n";
+    echo "<h2>"._AM_MSG_ADMIN."</h2>\n";
+    echo "<table class='ccinfo' width='100%'>\n<tr><td width='30%'>"._AM_MSG_COUNT." $total</td>\n";
+    echo "<td align='center'>".$nav->renderNav()."</td>\n";
+    echo "<td align='right' width='30%'>
+  <form method='get'>"._SEARCH."
+    <input name='q' value=\"".htmlspecialchars($search).'" size="8" /> &nbsp; '.
+	_CC_STATUS." ".$listctrl->renderStat()."
+      <noscript> <input type='submit' type='submit' value='"._AM_SUBMIT_VIEW."'></noscript>
+  </form>
+</td></tr>\n";
+    echo "</table>\n";
+
+    if ($res && icms::$xoopsDB->getRowsNum($res)) {
+	$sorts = array('mtime', 'status', 'fidref', 'touid', 'comms');
+	echo "<form method='post' name='msglist'>\n";
+	echo "<table class='outer' border='0' cellspacing='1'>\n";
+	echo "<tr><th><input type='checkbox' id='checkall' name='checkall' onClick='xoopsCheckAll(\"msglist\", \"checkall\");'/>";
+	foreach ($listctrl->getLabels($labels) as $lab) {
+	    if (isset($lab['value'])) {
+		$extra = empty($lab['extra'])?'':$lab['extra'];
+		$args = $lab['name']."=".$lab['next'];
+		$anc = " <a href='?$args' title='"._CC_SORT_ORDER."'$extra><img src='../images/".$lab['value'].".gif'></a>";
+	    } else $anc = '';
+
+	    echo "<th>".$lab['text']."$anc</th>\n";
+	}
+	echo "</tr>\n";
+	$n = 0;
+	$dirname = basename(dirname(dirname(__FILE__)));
+	$mbase = ICMS_URL."/modules/$dirname";
+	$strcut = (ICMS_USE_MULTIBYTES && function_exists('mb_strcut'))?'mb_strcut':'substr';
+	if (!function_exists('easiestml')) { /* XXX: support multi lang site */
+	    function easiestml($text) { return $text; }
+	} else {
+	    $GLOBALS['easiestml_lang'] = substr($GLOBALS['icmsConfig']['language'], 0, 2);
+	}
+	while ($data = icms::$xoopsDB->fetchArray($res)) {
+	    $id = (int) $data['msgid'];
+	    $title = easiestml(htmlspecialchars($data['title']));
+	    $stat = $data['status'];
+	    $url = "$mbase/message.php?id=$id";
+	    $msg = $url.($data['touid']<0?"&amp;uid=".icms::$user->getVar('uid'):"");
+	    $bg = $n++%2?'even':'odd';
+	    $date = myTimestamp($data['mtime'], "m", _AM_TIME_UNIT);
+	    $priuname = empty($data['uname'])?_AM_FORM_PRIM_NONE:htmlspecialchars($data['uname']);
+	    $from = empty($data['uid'])?$data['email']:htmlspecialchars($data['cfrom']);
+	    $box = "<input type='checkbox' name='ids[]' value='$id'/>";
+	    $ope = "<a href='$msg'>"._AM_DETAIL."</a>";
+	    $ope .= " | <a href='?msgid=$id'>"._EDIT."</a>";
+	    $vals = unserialize_text($data['body']);
+	    $fval = preg_replace('/[\n\r].*$/', '...', array_shift($vals));
+	    $slen = 30;
+	    if (strlen($fval)>$slen) {
+		$fval = preg_replace('/\.\.\.$/', '', $fval);
+		$fval = $strcut($fval, 0, $slen)."...";
+	    }
+	    $readit = $data['mtime']<$data['atime']?_CC_MARK_READIT:'';
+	    echo "<tr class='$bg stat$stat'><td align='center'>$box</td><td>$date</td><td>".$msg_status[$stat].$readit."</td><td>$title: $fval</td><td>$from</td><td>$priuname</td><td class='num'>".$data['comms']."</td><td>$ope</td></tr>\n";
+	}
+	echo "</table>\n";
+	echo "<div>"._AM_MSG_CHANGESTATUS." <select name='op'><option></option>\n";
+	foreach ($msg_status as $k=>$v) {
+	    echo "<option value='$k'>$v</option>\n";
+	}
+	echo "</select>\n";
+	echo "<input type='submit' value='"._AM_SUBMIT."'/>";
+	echo "</div>\n";
+	echo "</form>\n";
+    } else {
+	echo _AM_NODATA;
+    }
 }
 
 function select_widget($name, $sel, $def) {
@@ -194,7 +185,7 @@ function msg_detail($msgid) {
     $data['cdate'] = formatTimestamp($data['ctime'], 'm');
     $data['mdate'] = myTimestamp($data['mtime'], 'm', _AM_TIME_UNIT);
     $labs = array('title'=>_AM_FORM_TITLE, 'uid'=>_AM_MSG_FROM,
-		  'stat'=>_AM_MSG_STATUS, 'cdate'=>_AM_MSG_CTIME, 
+		  'stat'=>_AM_MSG_STATUS, 'cdate'=>_AM_MSG_CTIME,
 		  'mdate'=>_AM_MSG_MTIME, 'uname'=>_AM_MSG_CHARGE);
     $touid = false;
     echo "<h2>"._AM_MSG_ADMIN."</h2>\n";
@@ -278,3 +269,4 @@ function ccUname($uid) {
     if ($uid<=0) return _CC_USER_NONE;
     return icms_member_user_Object::getUnameFromId($uid);
 }
+?>

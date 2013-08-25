@@ -1,5 +1,5 @@
 <?php
-// $Id: comment_functions.php,v 1.8 2008-06-01 13:54:23 nobu Exp $
+// $Id$
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //
@@ -29,8 +29,7 @@
 include_once "functions.php";
 
 function ccenter_com_update($msgid, $total_num){
-    $sql = 'UPDATE ' . icms::$xoopsDB -> prefix( 'ccenter_forms' ) . ' SET comments=' . $total_num . ' WHERE aid=' . $msgid;
-	icms::$xoopsDB -> query( $sql );
+    return true;
 }
 
 function ccenter_com_approve(&$comment){
@@ -69,7 +68,7 @@ function ccenter_com_approve(&$comment){
 	// notification for guest contact
 	if (is_object(icms::$user) && $data['uid']==0 && $email) {
 	    $subj = $data['title'];
-	    $url = ICMS_URL."/modules/" . icms::$module -> getVar( 'dirname' ) . "/message.php?id=$msgid&p=".urlencode($data['onepass'])."#comment$comid";
+	    $url = ICMS_URL."/modules/".basename(dirname(__FILE__))."/message.php?id=$msgid&p=".urlencode($data['onepass'])."#comment$comid";
 	    $tags = array('X_MODULE'=>icms::$module->getVar('name'),
 			  'X_ITEM_TYPE'=>'', 'X_ITEM_NAME'=>$subj,
 			  'X_COMMENT_URL'=>$url, 'FROM_EMAIL'=>$email,
@@ -88,3 +87,4 @@ function ccenter_com_approve(&$comment){
 	}
     }
 }
+?>

@@ -1,5 +1,5 @@
 <?php
-// $Id: blocks.php,v 1.1 2009-07-04 03:54:37 nobu Exp $
+// $Id$
 
 define("_BL_CCENTER_OPT_LINES", "表示数");
 define("_BL_CCENTER_OPT_SORT", "並び");

@@ -1,28 +1,9 @@
 <?php
-/**
- * ccenter is a form module
- * 
- * File: file.php
- * 
- * index-page of ccenter module
- * 
- * @copyright	Copyright QM-B (Steffen Flohrer) 2011
- * @license		http://www.gnu.org/licenses/old-licenses/gpl-2.0.html GNU General Public License (GPL)
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		0.94
- * @author		Nobuhiro Yasutomi
- * @package		ccenter
- * --------------------------------------------------------------------------------------------------------
- * 				ccenter
- * @since		1.00
- * @author		QM-B
- * @package		ccenter
- * @version		$Id$
- * 
- */
+// show attachment file
+// $Id$
 
-include "header.php";
+include "../../mainfile.php";
+include "functions.php";
 
 if (!function_exists('mime_content_type')) {
     function mime_content_type($f) {
@@ -54,3 +35,4 @@ if ($_SERVER["REQUEST_METHOD"]=="GET") {
     header('Content-Disposition: inline;filename="'.$file.'"');
     print file_get_contents($path);
 }
+?>

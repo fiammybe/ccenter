@@ -1,6 +1,6 @@
 <?php
 // Person receipt blocks
-// $Id: ccenter_receipt.php,v 1.4 2009-07-04 05:24:38 nobu Exp $
+// $Id$
 
 global $icmsConfig;
 
@@ -9,7 +9,7 @@ $lang = $icmsConfig['language'];
 $main = "$moddir/language/$lang/main.php";
 if (!file_exists($main)) $main = "$moddir/language/english/main.php";
 include_once $main;
-include_once "$moddir/include/functions.php";
+include_once "$moddir/functions.php";
 
 function b_ccenter_receipt_show($options) {
     global $msg_status;
@@ -34,7 +34,7 @@ function b_ccenter_receipt_show($options) {
 	$data['statstr'] = $msg_status[$data['status']];
 	$list[] = $data;
     }
-    $mydir = icms::$module -> getVar( 'dirname' );
+    $mydir = basename(dirname(dirname(__FILE__)));
     return array('list'=>$list, 'dirname'=>$mydir);
 }
 
