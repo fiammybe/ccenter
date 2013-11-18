@@ -366,7 +366,7 @@ xoopsGetElementById("itemhelper").style.display = "block";
 function toggle(a) {
     xoopsGetElementById("optvars").style.display = a.checked?"block":"none";
 }
-togle(xoopsGetElementById("optshow"));
+toggle(xoopsGetElementById("optshow"));
 
 function addFieldItem() {
     var myform = window.document.myform;
