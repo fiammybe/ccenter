@@ -16,7 +16,7 @@ if (is_object(icms::$user)) {
     foreach (icms::$user->getGroups() as $gid) {
 		$conds[] = "grpperm LIKE '%|$gid|%'";
     }
-    if ($conds) $cond .= " AND (".join(' OR ', $conds).")";
+    if ($conds) $cond .= " AND (".implode(' OR ', $conds).")";
 } else {
     $cond .= " AND grpperm LIKE '%|".ICMS_GROUP_ANONYMOUS."|%'";
 }
@@ -35,7 +35,9 @@ if (icms::$xoopsDB->getRowsNum($res)!=1) {
     $xoopsOption['template_main'] = "ccenter_index.html";
     $forms = array();
     while ($form=icms::$xoopsDB->fetchArray($res)) {
-	if ($form['priuid']<0) continue; // need uid setting
+	if ($form['priuid']<0) {
+        continue;
+    } // need uid setting
 	$forms[] = $form;
     }
     $xoopsTpl->assign('forms', $forms);
@@ -49,14 +51,14 @@ $form = icms::$xoopsDB->fetchArray($res);
 get_attr_value($form['optvars']); // set default values
 $items = get_form_attribute($form['defs']);
 if ($form['priuid']< 0) {	// assign group member
-    $priuid = isset($_GET['uid'])?intval($_GET['uid']):0;
+    $priuid = isset($_GET['uid'])? (int)$_GET['uid'] :0;
     if ($priuid) {
 	$member_handler =& xoops_gethandler('member');
 	$priuser = $member_handler->getUser($priuid);
-	if (!is_object($priuser) || !in_array(-$form['priuid'], $priuser->groups())) $priuid=0;
+	if (!is_object($priuser) || !in_array(-$form['priuid'], $priuser->groups(), true)) $priuid=0;
     }
     if (empty($priuid)) {
-	$back = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:ICMS_URL;
+	$back = $_SERVER['HTTP_REFERER'] ?? ICMS_URL;
 	redirect_header($back, 3, _NOPERM);
 	exit;
     } else {
@@ -67,14 +69,14 @@ if ($form['priuid']< 0) {	// assign group member
 }
 
 $errors = array();
-if ($op!="form") {
+if ($op!=="form") {
     $errors = assign_post_values($items);
     if (count($errors)) {
 	$op = 'form';
 	assign_form_widgets($items);
-    } elseif ($op == 'store') {
+    } elseif ($op === 'store') {
 	$errors = store_message($items, $form);
-    } elseif ($op == 'confirm') {
+    } elseif ($op === 'confirm') {
 	assign_form_widgets($items, true);
     }
 } else {
@@ -104,7 +106,7 @@ function store_message($items, $form) {
 
     $uid = is_object(icms::$user)?icms::$user->getVar('uid'):0;
     $store = $form['store'];
-    if ($store==_DB_STORE_NONE) {
+    if ($store===_DB_STORE_NONE) {
 	$showaddr = true;	// no store to need show address
     } else {
 	$showaddr = get_attr_value(null, 'notify_with_email');
@@ -114,7 +116,9 @@ function store_message($items, $form) {
     $vals = array();
     $rtext = '';
     foreach ($items as $item) {
-	if (empty($item['name'])) continue;
+	if (empty($item['name'])) {
+        continue;
+    }
 	$name = $item['name'];
 	$val = $item['value'];
 	$vals[$name] = $val;
@@ -174,7 +178,7 @@ function store_message($items, $form) {
     }
 
     if ($store!=_DB_STORE_NONE) {
-	$res = icms::$xoopsDB->query("INSERT INTO ".CCMES. "(".join(',',array_keys($values)).") VALUES (".join(',', $values).")");
+	$res = icms::$xoopsDB->query("INSERT INTO ".CCMES. "(".implode(',',array_keys($values)).") VALUES (".implode(',', $values).")");
 	if ($res===false) return array("Error in DATABASE insert");
 	$id = icms::$xoopsDB->getInsertID();
 	if (empty($id)) return array("Internal Error in Store Message");
@@ -201,7 +205,7 @@ function store_message($items, $form) {
 	}
 	rmdir(ICMS_UPLOAD_PATH.cc_attach_path(0, ''));
     }
-    $dirname = basename(dirname(__FILE__));
+    $dirname = basename(__DIR__);
     $uname = icms::$user?icms::$user->getVar('uname'):$icmsConfig['anonymous'];
     $tags = array('SUBJECT'=>$form['title'],
 		  'TO_USER'=>$toUname,
@@ -212,7 +216,7 @@ function store_message($items, $form) {
 		  'MSGID'=>$id);
     $tpl = get_attr_value(null, 'from_confirm_tpl', 'form_confirm.tpl');
     $msgurl = ICMS_URL.($id?"/modules/$dirname/message.php?id=$id":'/');
-    if ($email) {		// reply automaticaly
+    if ($email) {		// reply automatically
 		$tags['VALUES'] = "$rtext$atext";
 		$tags['MSG_URL'] = ($store==_DB_STORE_NONE)?'':"\n"._MD_NOTIFY_URL."\n$msgurl$parg";
 		cc_notify_mail($tpl, $tags, $email, $toUser?$toUser->getVar('email'):'');
@@ -233,7 +237,9 @@ function store_message($items, $form) {
 			cc_notify_mail(get_attr_value(null, 'group_notify_tpl', $tpl), $tags, $users, $from);
     }
 
-    if ($id) $msgurl .= $parg;
+    if ($id) {
+        $msgurl .= $parg;
+    }
     $redirect = get_attr_value(null, 'redirect');
     if (!empty($redirect)) {
 		$msgurl = preg_match('/^\\//', $redirect)?ICMS_URL.$redirect:$redirect;
