@@ -8,7 +8,7 @@ $adminmenu[]=array('title' => _MI_CCENTER_FORMADMIN,
 $adminmenu[]=array('title' => _MI_CCENTER_MSGADMIN,
 		    'link' => "admin/msgadm.php");
 
-$moddir = basename(dirname(dirname(__FILE__)));
+$moddir = basename(dirname(__FILE__, 2));
 $module = icms::handler("icms_module")->getByDirname($moddir);
 
 $headermenu[] = array(
