@@ -1,0 +1,2 @@
+# CCenter
+Ccenter is a Contact forms module for ImpressCMS. It lets you define multiple contact forms, each with a different number of fields, and it offers functionalities in the backend to organise responding to the received questions.
