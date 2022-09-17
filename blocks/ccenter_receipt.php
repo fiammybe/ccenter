@@ -20,7 +20,7 @@ function b_ccenter_receipt_show($options) {
     foreach ($options as $v) {
 	$s[] = "'$v'";
     }
-    $cond =  " AND status IN (".join(',', $s).")";
+    $cond =  " AND status IN (".implode(',', $s).")";
     $order = $order=='asc'?'asc':'desc';
     $res = icms::$xoopsDB->query("SELECT msgid, m.mtime, uid, status, title
   FROM ".icms::$xoopsDB->prefix('ccenter_message')." m,

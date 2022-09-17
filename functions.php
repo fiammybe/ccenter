@@ -964,7 +964,7 @@ class ListCtrl {
     function sqlcondition($fname='status') {
 	$stat = $this->getVar('stat');
 	if (preg_match('/\s+/', $stat)) {
-	    return "$fname IN ('".join("','", preg_split('/\s+/',$stat))."')";
+	    return "$fname IN ('".implode("','", preg_split('/\s+/',$stat))."')";
 	}
 	return "$fname=".icms::$xoopsDB->quoteString($stat);
     }
@@ -974,7 +974,7 @@ class ListCtrl {
 	foreach ($this->getVar('orders') as $name) {
 	    $order[] = $name." ".$this->getVar($name);
 	}
-	if ($order) return " ORDER BY ".join(',', $order);
+	if ($order) return " ORDER BY ".implode(',', $order);
 	return "";
     }
 

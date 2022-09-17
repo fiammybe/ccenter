@@ -58,7 +58,7 @@ if (isset($_POST['formdefs']) && !isset($_POST['preview'])) {
     if ($formid) {
 	$vals[] = "grpperm=".$v;
 	$vals[] = "mtime=".time();
-	$res = icms::$xoopsDB->query("UPDATE ".FORMS." SET ".join(',', $vals)." WHERE formid=".$formid);
+	$res = icms::$xoopsDB->query("UPDATE ".FORMS." SET ".implode(',', $vals)." WHERE formid=".$formid);
     } else {
 	$vals['grpperm'] = $v;
 	$vals['mtime'] = time();
