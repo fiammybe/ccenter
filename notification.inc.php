@@ -30,18 +30,17 @@ function ccenter_notify_iteminfo($category, $item_id)
 {
 
     $item = array('name'=>'','url'=>'');
-    $dirname = basename(dirname(__FILE__));
-    if ($category=='message' && $item_id!=0) {
+    $dirname = basename(__DIR__);
+    if ($category==='message' && $item_id!=0) {
 	// Assume we have a valid story id
 	$sql = "SELECT fidref, touid, title FROM ".
 	    icms::$xoopsDB->prefix('ccenter_message').','.
 	    icms::$xoopsDB->prefix('ccenter_form').
 	    " WHERE status<>'x' AND msgid=$item_id AND fidref=formid";
 	$result = icms::$xoopsDB->query($sql); // TODO: error check
-	list($fid, $touid, $title) = icms::$xoopsDB->fetchRow($result);
+	[$fid, $touid, $title] = icms::$xoopsDB->fetchRow($result);
 	$item['name'] = $title;
 	$item['url'] = ICMS_URL."/modules/$dirname/message.php?id=".$item_id;
     }
     return $item;
 }
-?>

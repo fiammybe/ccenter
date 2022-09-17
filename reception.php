@@ -9,15 +9,19 @@ if (!is_object(icms::$user)) {
     redirect_header(ICMS_URL.'/user.php', 3, _NOPERM);
 }
 
-$id= isset($_GET['form'])?intval($_GET['form']):0;
+$id= isset($_GET['form'])? (int)$_GET['form'] :0;
 $isadmin = icms::$user->isAdmin(icms::$module->getVar('mid'));
-if ($isadmin) $cond = "1";
+if ($isadmin) {
+    $cond = "1";
+}
 else {
     $cond = '(priuid='.icms::$user->getVar('uid').
 	' OR cgroup IN ('.join(',', icms::$user->getGroups()).'))';
 }
 
-if ($id) $cond .= ' AND formid='.$id;
+if ($id) {
+    $cond .= ' AND formid=' . $id;
+}
 
 $res = icms::$xoopsDB->query("SELECT f.*,count(msgid) nmsg,max(m.mtime) ltime
  FROM ".FORMS." f LEFT JOIN ".CCMES." m ON fidref=formid AND status<>".icms::$xoopsDB->quoteString(_STATUS_DEL)."
@@ -76,7 +80,7 @@ $items = get_form_attribute($form['defs']);
 $breadcrumbs->set(htmlspecialchars($form['title']), "reception.php?formid=$id");
 $breadcrumbs->assign();
 
-$start = isset($_GET['start'])?intval($_GET['start']):0;
+$start = isset($_GET['start'])? (int)$_GET['start'] :0;
 if ($form['custom']) {
     $reg = array('/\\[desc\\](.*)\\[\/desc\\]/sU', '/<form[^>]*>(.*)<\\/form[^>]*>/sU', '/{CHECK_SCRIPT}/');
     $rep = array('\\1', '', '');
