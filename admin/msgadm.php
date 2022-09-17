@@ -12,7 +12,7 @@ if (isset($_POST['store'])) {
     $touid = (int) $_POST['touid'];
     $stat = icms_core_DataFilter::stripSlashesGPC($_POST['status']);
     $res = icms::$xoopsDB->query("SELECT * FROM ".CCMES." WHERE msgid=".$msgid);
-    $back = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:"msgadm.php";
+    $back = $_SERVER['HTTP_REFERER'] ?? "msgadm.php";
     if ($res && icms::$xoopsDB->getRowsNum($res)==1) {
         $data = icms::$xoopsDB->fetchArray($res);
         $sets = array();
@@ -47,7 +47,7 @@ if (isset($_POST['store'])) {
     foreach ($_POST['ids'] as $msgid) {
         change_message_status($msgid, 0, $op);
     }
-    $back = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:"msgadm.php";
+    $back = $_SERVER['HTTP_REFERER'] ?? "msgadm.php";
     redirect_header($back, 1, _AM_MSG_UPDATED);
 }
 
@@ -88,7 +88,7 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
     if ($search) $sql2 .= " AND CONCAT(body,' ',m.email) like ".icms::$xoopsDB->quoteString("%$search%");
 
     $res = icms::$xoopsDB->query("SELECT count(msgid) $sql0 $sql2");
-    list($total) = icms::$xoopsDB->fetchRow($res);
+    [$total] = icms::$xoopsDB->fetchRow($res);
     $args = $formid?"formid=$formid":"";
     $nav = new icms_view_PageNav($total, $max, $start, "start", $args);
 

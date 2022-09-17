@@ -47,8 +47,10 @@ function display_lang_file($file, $link='') {
 	$help = "../$lang/$file";
     }
     $content = file_get_contents($help);
-    list($h, $b) = preg_split('/<\/?body>/', $content);
-    if (empty($b)) $b =& $content;
+    [$h, $b] = preg_split('/<\/?body>/', $content);
+    if (empty($b)) {
+        $b =& $content;
+    }
     $murl = ICMS_URL.'/modules/'.icms::$module->getVar('dirname');
 
     if (preg_match('/<link[^>]*>/', $b, $match)) {
