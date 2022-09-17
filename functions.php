@@ -22,7 +22,7 @@ define('_DB_STORE_NONE', 2);	// query not store in db
 define('_CC_WIDGET_TPL', "ccenter_form_widgets.html");
 
 if (!defined('_CC_STATUS_NONE')) {
-    $moddir = dirname(__FILE__);
+    $moddir = __DIR__;
     $lang = $GLOBALS['icmsConfig']['language'];
     if (!include_once("$moddir/language/$lang/common.php")) {
 	include_once("$moddir/language/english/common.php");
@@ -44,14 +44,14 @@ $msg_status = array(
 	'y1'=>_CC_EXPORT_LAST_YEAR,
 	'all'=>_CC_EXPORT_ALL);
 
-define('_CC_TPL_NONE',  0);
-define('_CC_TPL_BLOCK', 1);
-define('_CC_TPL_FULL',  2);
-define('_CC_TPL_FRAME', 3);	// obsolete
-define('_CC_TPL_NONE_HTML', 4);
+const _CC_TPL_NONE = 0;
+const _CC_TPL_BLOCK = 1;
+const _CC_TPL_FULL = 2;
+const _CC_TPL_FRAME = 3;    // obsolete
+const _CC_TPL_NONE_HTML = 4;
 
-define('LABEL_ETC', '*');	// radio, checkbox widget 'etc' text input.
-define('OPTION_ATTRS', 'size,rows,maxlength,cols,prop,notify_with_email');
+const LABEL_ETC = '*';    // radio, checkbox widget 'etc' text input.
+const OPTION_ATTRS = 'size,rows,maxlength,cols,prop,notify_with_email';
 
 // attribute config option expanding
 function get_attr_value($pri, $name=null, $value=null) {
@@ -66,7 +66,7 @@ function get_attr_value($pri, $name=null, $value=null) {
 			$defs[$key] = 0;
 		}
 	// override module config values
-	$mydirname = basename(dirname(__FILE__));
+	$mydirname = basename(__DIR__);
 	if (!empty($GLOBALS['icmsModule']) && $GLOBALS['icmsModule']->getVar('dirname') == $mydirname) {
 	    $def_attr = $GLOBALS['icmsModuleConfig']['def_attrs'];
 	} else {
@@ -89,7 +89,9 @@ function get_attr_value($pri, $name=null, $value=null) {
 			$defs[$k] = $v;
 		}
     }
-    if (isset($defs[$name])) return $defs[$name];
+    if (isset($defs[$name])) {
+        return $defs[$name];
+    }
     return $value;
 }
 
@@ -121,7 +123,7 @@ function cc_display_values($vals, $items, $msgid=0, $add="") {
 								$cvals[] = isset($opts[$v]) ? strip_tags($opts[$v]) : $v;
 							}
 						}
-						$val = join(', ', $cvals);
+						$val = implode(', ', $cvals);
 						break;
 					default:
 						$val = icms_core_DataFilter::checkVar($val, 'text', 'output');
@@ -162,7 +164,7 @@ function get_form_attribute($defs, $labels='', $prefix="cc") {
     foreach (cc_csv_parse($defs) as $opts) {
 	if (empty($opts)) continue;
 	if (preg_match('/^#/', $opts[0])) {
-	    $result[] = array('comment'=>substr(join(',', $opts), 1));
+	    $result[] = array('comment'=>substr(implode(',', $opts), 1));
 	    continue;
 	}
 	$name = array_shift($opts);
@@ -170,18 +172,20 @@ function get_form_attribute($defs, $labels='', $prefix="cc") {
 	    $label = $d[1];
 	    $name = preg_replace('/=(.*)$/', '', $name);
 	} else {
-	    $label = isset($labs[$name])?$labs[$name]:$name;
+	    $label = $labs[$name] ?? $name;
 	}
 	$type='text';
 	$comment='';
 	$attr = array();
-	if (count($opts) && in_array($opts[0], $types)) {
+	if (count($opts) && in_array($opts[0], $types, true)) {
 	    $type = array_shift($opts);
 	}
 	if (preg_match('/\*$/', $name)) { // syntax convention
 	    $attr['check'] = 'require';
 	    $name = preg_replace('/\s*\*$/', '', $name);
-	    if (defined('_MD_REQUIRE_MARK')) $label = preg_replace('/\s*\*$/', _MD_REQUIRE_MARK, $label);
+	    if (defined('_MD_REQUIRE_MARK')) {
+            $label = preg_replace('/\s*\*$/', _MD_REQUIRE_MARK, $label);
+        }
 	}
 	while (isset($opts[0]) && (preg_match('/^(size|rows|maxlength|cols|prop)=(\d+)$/', $opts[0], $d) || preg_match('/^(check)=(.+)$/', $opts[0], $d))) {
 	    array_shift($opts);
@@ -192,31 +196,37 @@ function get_form_attribute($defs, $labels='', $prefix="cc") {
 	if (count($opts)) {
 	    while(count($opts) && !preg_match('/^\s*#/', $opts[0])) {
 		$v = array_shift($opts);
-		$sv = preg_split('/=/', $v, 2);
+		$sv = explode("=", $v, 2);
 		if (count($sv)>1) {
 		    $k = strip_tags($sv[0]);
 		    $sk = preg_replace('/\+$/', '', $k);  // real value
-		    if ($k != $sk) $defs[] = $sk;	  // defaults
+		    if ($k != $sk) {
+                $defs[] = $sk;
+            }      // defaults
 		    $options[$sk] = $sv[1];
 		} else {
 		    $k = strip_tags($v);
 		    $sk = preg_replace('/\+$/', '', $k);  // real value
-		    if ($k != $sk) $defs[] = $sk;	  // defaults
+		    if ($k !== $sk) {
+                $defs[] = $sk;
+            }      // defaults
 		    $options[$sk] = preg_replace('/\+$/', '', $v);
 		}
 	    }
 	    if (count($opts)) {
 		$opts[0] = preg_replace('/^\s*#/','', $opts[0]);
-		$comment = join(',',$opts);
+		$comment = implode(',',$opts);
 	    }
 	}
 	if ($type == 'radio') {
 	    $defs = $defs?$defs[0]:'';
 	} elseif ($type != 'checkbox') {
-	    $defs = eval_user_value(join(',', $options));
+	    $defs = eval_user_value(implode(',', $options));
 	}
 	if ($type=='date') {
-	    if (empty($defs)) $defs = formatTimestamp(time(), 'Y-m-d');
+	    if (empty($defs)) {
+            $defs = formatTimestamp(time(), 'Y-m-d');
+        }
 	} elseif ($type=='textarea') {
 	    $attr['rows'] = get_attr_value($attr, 'rows');
 	    $attr['cols'] = get_attr_value($attr, 'cols');
@@ -236,7 +246,9 @@ function get_form_attribute($defs, $labels='', $prefix="cc") {
 function assign_post_values(&$items) {
     $errors = array();
     foreach ($items as $key => $item) {
-		if (empty($item['field'])) continue;
+		if (empty($item['field'])) {
+            continue;
+        }
 		$name = $item['field'];
 		$type = $item['type'];
 		$lab = $item['label'];
@@ -268,38 +280,39 @@ function assign_post_values(&$items) {
 				break;
 			case 'num':
 				$check='numeric';
-				default:
-					$v = get_attr_value(null, $check);
-					if (!empty($v)) {
-						$check = $v;
-					}
-					if (!preg_match('/^'.$check.'$/', $val)) {
-						$errors[] = $lab.": ".($val?_MD_REGEXP_ERR:_MD_REQUIRE_ERR);
-					}
-				break;
+                break;
+            default:
+                $v = get_attr_value(null, $check);
+                if (!empty($v)) {
+                    $check = $v;
+                }
+                if (!preg_match('/^'.$check.'$/', $val)) {
+                    $errors[] = $lab.": ".($val?_MD_REGEXP_ERR:_MD_REQUIRE_ERR);
+                }
+                break;
 		}
 		switch ($type) {
 			case 'checkbox':
 				if (empty($val)) {
 					$val = array();
 				}
-				$idx = array_search(LABEL_ETC, $val);	 // etc
+				$idx = array_search(LABEL_ETC, $val, true);	 // etc
 				if (is_int($idx)) {
 					$val[$idx] = strip_tags($item['options'][LABEL_ETC])." ".icms_core_DataFilter::stripSlashesGPC($_POST[$name."_etc"]);
 				}
 				break;
 			case 'radio':
-				if ($val == LABEL_ETC) {			// etc
+				if ($val === LABEL_ETC) {			// etc
 					$val = strip_tags($item['options'][LABEL_ETC])." ".icms_core_DataFilter::stripSlashesGPC($_POST[$name."_etc"]);
 				}
 				break;
 			case 'hidden':
 				case 'const':
-					$val = eval_user_value(join(',', $item['options']));
+					$val = eval_user_value(implode(',', $item['options']));
 				break;
 			case 'file':
 				$val = '';		// filename
-				$upfile = isset($_FILES[$name]) ? $_FILES[$name] : array('name' => '');
+				$upfile = $_FILES[$name] ?? array('name' => '');
 				if (isset($_POST[$name."_prev"])) {
 					$val = icms_core_DataFilter::stripSlashesGPC($_POST[$name."_prev"]);
 					if (!empty($upfile['name'])) {
@@ -321,11 +334,9 @@ function assign_post_values(&$items) {
 				if (!icms_core_DataFilter::checkVar($val, 'email')) {
 					$errors[] = $lab.": "._MD_ADDRESS_ERR;
 				}
-				if (isset($_POST[$name])) {
-					if ($val != icms_core_DataFilter::stripSlashesGPC($_POST[$name])) {
-						$errors[] = sprintf(_MD_CONF_LABEL, $lab).": "._MD_CONFIRM_ERR;
-					}
-				}
+				if (isset($_POST[$name]) && $val !== icms_core_DataFilter::stripSlashesGPC($_POST[$name])) {
+                    $errors[] = sprintf(_MD_CONF_LABEL, $lab).": "._MD_CONFIRM_ERR;
+                }
 				break;
 		}
 		$items[$key]['value'] = $val;
@@ -341,7 +352,9 @@ function assign_form_widgets(&$items, $conf=false) {
 			$updates[] = $item;
 			continue;
 		}
-		if ($item['type']=='hidden' && !$conf) continue;
+		if ($item['type']=='hidden' && !$conf) {
+            continue;
+        }
 		$val =& $item['value'];
 		$fname =& $item['field'];
 		$opts = $item['options'];
@@ -354,7 +367,7 @@ function assign_form_widgets(&$items, $conf=false) {
 					$v = htmlspecialchars($v, ENT_QUOTES);
 					$input .= sprintf($fmt, $v);
 				}
-				$input .= htmlspecialchars(join(', ', $val), ENT_QUOTES);
+				$input .= htmlspecialchars(implode(', ', $val), ENT_QUOTES);
 			} else {
 				$v = htmlspecialchars($val, ENT_QUOTES);
 				switch ($item['type']) {
@@ -377,8 +390,7 @@ function assign_form_widgets(&$items, $conf=false) {
 			}
 		} else {
 			$input = cc_make_widget($item);
-			if ($mconf && isset($item['type']) && $item['type']=='mail'
-				&& isset($item['attr']['check']) && $item['attr']['check']=='require') {
+			if (isset($item['type'], $item['attr']['check']) && $mconf && $item['type'] == 'mail' && $item['attr']['check'] == 'require') {
 				$cfname = $fname.'_conf';
 				$citem = array(
 					'name'=>sprintf(_MD_CONF_LABEL, $item['name']),
@@ -428,10 +440,8 @@ function cc_make_widget($item, $vars=null) {
 		if (!is_array($value)) {
 			$value = icms_core_DataFilter::stripSlashesGPC($value);
 		}
-    } else {
-		if (isset($item['default'])) {
-			$value = $item['default'];
-		}
+    } else if (isset($item['default'])) {
+        $value = $item['default'];
     }
     if (isset($options)) {
 		if (isset($options[LABEL_ETC])) {
@@ -445,12 +455,10 @@ function cc_make_widget($item, $vars=null) {
 						}
 					}
 				}
-			} else {
-				if (preg_match($ereg, $value)) {
-					$item['etc_value'] = preg_replace($ereg, '', $value);
-					$value = LABEL_ETC;
-				}
-			}
+			} else if (preg_match($ereg, $value)) {
+                $item['etc_value'] = preg_replace($ereg, '', $value);
+                $value = LABEL_ETC;
+            }
 		}
     }
     $item['value'] = $value;
@@ -466,7 +474,9 @@ function cc_make_widget($item, $vars=null) {
 if (!function_exists("unserialize_vars")) {
     // expand: label=value[,\n](label=value...)
     function unserialize_vars($text,$rev=false) {
-	if (preg_match("/^\w+: /", $text)) return unserialize_text($text);
+	if (preg_match("/^\w+: /", $text)) {
+        return unserialize_text($text);
+    }
 	$array = array();
 	$text = ltrim($text);
 	$pat = array('/""/', '/^"(.*)"$/');
@@ -476,7 +486,9 @@ if (!function_exists("unserialize_vars")) {
 	    $ln = preg_replace("/[\\s$delm]\$/", '', $d[0]);
 	    $text = ltrim(substr($text, strlen($d[0])));
 	    if (preg_match('/^\s*([^=]+)\s*=\s*(.*)$/', $ln, $d)) {
-		if (preg_match('/^#/', $d[1])) continue;
+		if (preg_match('/^#/', $d[1])) {
+            continue;
+        }
 		if ($rev) {
 		    $k = $d[2];
 		    $v = $d[1];
@@ -525,14 +537,20 @@ function move_attach_file($tmp, $file, $id=0) {
     $dir = dirname($path);
     $base = dirname($dir);
     if (!is_dir($base)) {
-	if (!mkdir($base)) die("UPLOADS permittion error");
+	if (!mkdir($base) && !is_dir($base)) die("UPLOADS permittion error");
 	$fp = fopen("$base/.htaccess", "w");
 	fwrite($fp, "deny from all\n");	// not access direct
 	fclose($fp);
     }
-    if (!is_dir($dir) && !mkdir($dir)) die("UPLOADS permittion error");
-    if (empty($tmp)) $tmp = ICMS_UPLOAD_PATH.cc_attach_path(0, $file);
-    if (@rename($tmp, $path) || move_uploaded_file($tmp, $path)) return true;
+    if (!is_dir($dir) && !mkdir($dir) && !is_dir($dir)) {
+        die("UPLOADS permittion error");
+    }
+    if (empty($tmp)) {
+        $tmp = ICMS_UPLOAD_PATH . cc_attach_path(0, $file);
+    }
+    if (@rename($tmp, $path) || move_uploaded_file($tmp, $path)) {
+        return true;
+    }
     return false;
 }
 
@@ -540,7 +558,7 @@ if (!function_exists("template_dir")) {
     function template_dir($file='') {
 	global $icmsConfig;
 	$lang = $icmsConfig['language'];
-	$dir = dirname(__FILE__).'/language/%s/mail_template/%s';
+	$dir = __DIR__ .'/language/%s/mail_template/%s';
 	$path = sprintf($dir,$lang, $file);
 	if (file_exists($path)) {
 	    $path = sprintf($dir,$lang, '');
@@ -552,7 +570,7 @@ if (!function_exists("template_dir")) {
 }
 
 function cc_attach_path($id, $file) {
-    $dirname = basename(dirname(__FILE__));
+    $dirname = basename(__DIR__);
     $dir = $id?sprintf("%05d", $id):"work".substr(session_id(), 0, 8);
     return "/$dirname/$dir".($file?"/$file":"");
 }
@@ -560,13 +578,19 @@ function cc_attach_path($id, $file) {
 function cc_attach_image($id, $file, $urlonly=false, $add='') {
     if (empty($file)) return "";
     $rurl = "file.php?".($id?"id=$id&":"")."file=".urlencode($file).($add?"&$add":"");
-    if ($urlonly) return ICMS_URL."/modules/".basename(dirname(__FILE__))."/$rurl";
+    if ($urlonly) return ICMS_URL."/modules/".basename(__DIR__)."/$rurl";
     $path = ICMS_UPLOAD_PATH.cc_attach_path($id, $file);
     $xy = getimagesize($path);
     if ($xy) {
-	if ($xy[0]>$xy[1] && $xy[0]>300) $extra = " width='300'";
-	elseif ($xy[1]>300) $extra = " height='300'";
-	else $extra = "";
+	if ($xy[0]>$xy[1] && $xy[0]>300) {
+        $extra = " width='300'";
+    }
+	elseif ($xy[1]>300) {
+        $extra = " height='300'";
+    }
+	else {
+        $extra = "";
+    }
 	$extra .= " alt='".htmlspecialchars($file, ENT_QUOTES)."'";
 	return "<img src='$rurl' class='myphoto' $extra />";
     } else {
@@ -577,11 +601,17 @@ function cc_attach_image($id, $file, $urlonly=false, $add='') {
 
 function return_unit_bytes($size) {
     $unit = defined('_MD_BYTE_UNIT')?_MD_BYTE_UNIT:"bytes";
-    if ($size<10*1024) return number_format($size);
+    if ($size<10*1024) {
+        return number_format($size);
+    }
     $size /= 1024;
-    if ($size<10*1024) return round($size, 1).'K'.$unit;
+    if ($size<10*1024) {
+        return round($size, 1) . 'K' . $unit;
+    }
     $size /= 1024;
-    if ($size<10*1024) return round($size, 1).'M'.$unit;
+    if ($size<10*1024) {
+        return round($size, 1) . 'M' . $unit;
+    }
     $size /= 1024;
     return round($size, 1).'G'.$unit;
 }
@@ -594,18 +624,20 @@ function cc_check_perm($data) {
 
     $uid = is_object(icms::$user)?icms::$user->getVar('uid'):0;
 
-    $pass = isset($_GET['p'])?$_GET['p']:"";
+    $pass = $_GET['p'] ?? "";
     if ($pass) {
 	$_SESSION['onepass'] = $pass;
     } else {
 	$pass = (empty($_SESSION['onepass'])?"":$_SESSION['onepass']);
     }
-    if (!empty($data['onepass']) && $data['onepass']==$pass) return true;
+    if (!empty($data['onepass']) && $data['onepass']==$pass) {
+        return true;
+    }
 
     $mid = is_object(icms::$module)?icms::$module->getVar('mid'):0;
     if ($uid && icms::$user->isAdmin($mid)) return true;
     $cgrp = $data['cgroup'];
-    if ($cgrp && $uid && in_array($cgrp, icms::$user->getGroups())) return true;
+    if ($cgrp && $uid && in_array($cgrp, icms::$user->getGroups(), true)) return true;
     if ($uid && ($data['uid']==$uid || $data['touid'] == $uid)) return true;
     return false;
 }
@@ -624,7 +656,7 @@ function cc_get_message($msgid) {
 function cc_check_comment($msgid, $com_id) {
 
     $res = icms::$xoopsDB->query("SELECT com_itemid FROM ".icms::$xoopsDB->prefix('xoopscomments')." WHERE com_id=".(int)$com_id." AND com_itemid=".(int)$msgid." AND com_modid=".icms::$module->getVar('mid'));
-    list($com_itemid) = icms::$xoopsDB->fetchRow($res);
+    [$com_itemid] = icms::$xoopsDB->fetchRow($res);
     return $com_itemid;
 }
 
@@ -637,7 +669,9 @@ function cc_delete_message($msgid) {
     $dir = ICMS_UPLOAD_PATH.cc_attach_path(0,'');
     $dh = opendir($dir);
     while ($file = readdir($dh)) {
-	if ($file==".." || $file==".") continue;
+	if ($file==".." || $file==".") {
+        continue;
+    }
 	$path = "$dir/$file";
 	unlink($path);
     }
@@ -658,7 +692,7 @@ function cc_message_entry($data, $link="message.php") {
 function is_cc_evaluate($id, $uid, $pass) {
     $cond = $pass?'onepass='.icms::$xoopsDB->quoteString($pass):"uid=$uid";
     $res = icms::$xoopsDB->query("SELECT count(uid) FROM ".CCMES." WHERE msgid=$id AND $cond AND status=".icms::$xoopsDB->quoteString(_STATUS_REPLY));
-    list($ret) = icms::$xoopsDB->fetchRow($res);
+    [$ret] = icms::$xoopsDB->fetchRow($res);
     return $ret;
 }
 
@@ -694,7 +728,7 @@ function cc_notify_mail($tpl, $tags, $users, $from="") { // return: error count
 	$xoopsMailer->setToEmails($users);
     }
 
-    $xoopsMailer->setFromEmail($from?$from:$icmsConfig['adminmail']);
+    $xoopsMailer->setFromEmail($from ?: $icmsConfig['adminmail']);
     $xoopsMailer->setFromName(icms::$module->getVar('name'));
     $xoopsMailer->setSubject(_CC_NOTIFY_SUBJ);
     $comment = get_attr_value(null, 'reply_comment', '');
@@ -709,7 +743,8 @@ function cc_notify_mail($tpl, $tags, $users, $from="") { // return: error count
     return $xoopsMailer->send()?0:1;
 }
 
-function check_form_tags($cust,$defs, $desc) {
+function check_form_tags($cust,$defs, $desc): string
+{
     global $icmsConfig;
 
     switch ($cust) {		// check only custom form
@@ -718,10 +753,14 @@ function check_form_tags($cust,$defs, $desc) {
 	return '';
     }
 
-    $base = dirname(__FILE__).'/language/';
+    $base = __DIR__ .'/language/';
     $path = $base.$icmsConfig['language'].'/main.php';
-    if (file_exists($path)) include_once($path);
-    else include_once("$base/english/main.php");
+    if (file_exists($path)) {
+        include_once($path);
+    }
+    else {
+        include_once("$base/english/main.php");
+    }
     $items = get_form_attribute($defs);
     assign_form_widgets($items);
     $checks = array('{FORM_ATTR}', '{SUBMIT}', '{BACK}', '{CHECK_SCRIPT}');
@@ -752,7 +791,7 @@ function custom_template($form, $items, $conf=false) {
 	$str[] = '{'.$item['name'].'}';
 	$rep[] = $value;
 	$fname = $item['field'];
-	if ($item['type']=='file') {
+	if ($item['type'] === 'file') {
 	    $hasfile = ' enctype="multipart/form-data"';
 	}
     }
@@ -800,7 +839,7 @@ function cc_log_message($formid, $comment, $msgid=0) {
     $now = time();
     icms::$xoopsDB->queryF("INSERT INTO ".CCLOG."(ltime, fidref, midref, euid, comment)VALUES($now, $formid, $msgid, $uid, ".icms::$xoopsDB->quoteString(preg_replace('/\n/', ", ", $comment)).")");
     if ($msgid) {
-	$msgurl = ICMS_URL."/modules/".basename(dirname(__FILE__))."/message.php?id=$msgid";
+	$msgurl = ICMS_URL."/modules/".basename(__DIR__)."/message.php?id=$msgid";
 	$res = icms::$xoopsDB->query("SELECT title FROM ".FORMS." WHERE formid=".$formid);
 	list($title) = icms::$xoopsDB->fetchRow($res);
 	$tags = array('LOG_STATUS'=>$comment,
@@ -832,14 +871,14 @@ function myTimestamp($t, $fmt="l", $unit="%dmin,%dhour,%dday,past %s") {
     }
     $units = explode(',', $unit);
     if ($past < PAST_TIME_MIN) {
-	$ret = sprintf($units[0], intval($past/60));
+	$ret = sprintf($units[0], (int)($past / 60));
     } elseif ($past < PAST_TIME_HOUR) {
-	$ret = sprintf($units[1], intval($past/3600)); // hours
-	$v = intval(($past % 3600)/60);	     // min
+	$ret = sprintf($units[1], (int)($past / 3600)); // hours
+	$v = (int)(($past % 3600) / 60);	     // min
 	if ($v) $ret .= sprintf($units[0], $v);
     } else {
-	$ret = sprintf($units[2], intval($past/86400)); // days
-	$v = intval(($past % 86400)/3600);    // hours
+	$ret = sprintf($units[2], (int)($past / 86400)); // days
+	$v = (int)(($past % 86400) / 3600);    // hours
 	if ($v) $ret .= sprintf($units[1], $v);
     }
     return sprintf($units[3], $ret);
@@ -851,7 +890,7 @@ class ListCtrl {
     var $vars;
     var $combo;
 
-    function ListCtrl($name, $init=array(), $combo='') {
+    public function __construct($name, $init=array(), $combo='') {
 	if (empty($combo)) {
 
 	    $combo = icms::$module->config['status_combo'];
@@ -871,7 +910,7 @@ class ListCtrl {
     }
 
     function getVar($name) {
-	return isset($this->vars[$name])?$this->vars[$name]:"";
+	return $this->vars[$name] ?? "";
     }
 
     function setVar($name, $val) { $this->vars[$name]=$val; }
@@ -882,7 +921,7 @@ class ListCtrl {
 	foreach ($labels as $k => $v) {
 	    $lab = array('text'=>$v, 'name'=>$k);
 	    if (isset($this->vars[$k])) { // with ctrl
-		$n = array_search($k, $orders);
+		$n = array_search($k, $orders, true);
 		if (is_int($n)) {
 		    $val = strtolower($this->getVar($k));
 		    $lab['value'] = $val;
@@ -993,13 +1032,15 @@ function set_checkvalue(&$form) {
 	$fname = $item['field'];
 	$type = $item['type'];
 	$lab = htmlspecialchars(strip_tags($item['label']));
-	$check = isset($item['attr']['check'])?$item['attr']['check']:'';
+	$check = $item['attr']['check'] ?? '';
 	if ($type == 'file') {
 	    $hasfile=true;
 	} elseif (preg_match('/_conf$/', $fname)) {
 	    $confirm[preg_replace('/_conf$/', '', $fname)] = $lab;
 	} elseif (!empty($check)) {
-	    if ($type == 'checkbox') $fname .= '[]';
+	    if ($type == 'checkbox') {
+            $fname .= '[]';
+        }
 	    $require[$fname] = $lab;
 	    $pattern[$fname] = ($check=='require')?'.+':$check;
 	}
@@ -1018,15 +1059,17 @@ function render_form(&$form, $op) {
     $br = 1;
     switch ($form['custom']) {
     case _CC_TPL_FRAME:
-	$xoopsTpl->assign(array('xoops_showcblock'=>0,'xoops_showlblock'=>0,'xoops_showrblock'=>0));
+	    $xoopsTpl->assign(array('xoops_showcblock'=>0,'xoops_showlblock'=>0,'xoops_showrblock'=>0));
+        break;
     case _CC_TPL_BLOCK:
     case _CC_TPL_FULL:
-	$xoopsTpl->assign('content', custom_template($form, $form['items'], $op == 'confirm'));
-	$template = "ccenter_custom.html";
-	break;
+	    $xoopsTpl->assign('content', custom_template($form, $form['items'], $op == 'confirm'));
+	    $template = "ccenter_custom.html";
+	    break;
     case _CC_TPL_NONE_HTML:
-	$html = 1;
-	$br = 0;
+        $html = 1;
+        $br = 0;
+        break;
     case _CC_TPL_NONE:
 	$str = $rep = array();
 	if (!empty($form['priuser'])) {
@@ -1046,7 +1089,7 @@ function render_form(&$form, $op) {
 	$xoopsTpl->assign('op', 'confirm');
 	$template = ($op=='confirm'?"ccenter_confirm.html":"ccenter_form.html");
     }
-    $dirname = basename(dirname(__FILE__));
+    $dirname = basename(__DIR__);
     $form['cc_url'] = ICMS_URL."/modules/$dirname";
     $xoopsTpl->assign('form', $form);
     return $template;
@@ -1057,7 +1100,7 @@ class XoopsBreadcrumbs {
     var $moddir;
     var $pairs;
 
-    function XoopsBreadcrumbs() {
+    public function __construct() {
 	global $xoopsTpl;
 	$this->moddir = ICMS_URL."/modules/".icms::$module->getVar('dirname').'/';
 	$this->pairs = array(array('name'=>icms::$module->getVar('name'), 'url'=>$this->moddir));
@@ -1068,7 +1111,8 @@ class XoopsBreadcrumbs {
 	$this->pairs[] = array('name'=>htmlspecialchars(strip_tags($name), ENT_QUOTES), 'url'=>$url);
     }
 
-    function get() {
+    function get(): array
+    {
 	$ret = $this->pairs;
 	$keys = array_keys($ret);
 	$ret[array_pop($keys)]['url'] = '';
@@ -1081,4 +1125,3 @@ class XoopsBreadcrumbs {
     }
 
 }
-?>
