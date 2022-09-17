@@ -4,11 +4,11 @@
 
 include_once 'mypagenav.php';
 
-class MyFormSelect extends XoopsFormSelect
+class MyFormSelect extends icms_form_elements_Select
 {
 
-    function MyFormSelect($caption,$name,$value=null,$size=1,$multiple=false){
-	$this->XoopsFormSelect($caption, $name, $value, $size, $multiple);
+    function __construct($caption, $name, $value=null, $size=1, $multiple=false){
+	$this->icms_form_elements_Select($caption, $name, $value, $size, $multiple);
 	$this->pagenav = '';
 	$this->slab = _SEARCH;
     }
@@ -16,7 +16,7 @@ class MyFormSelect extends XoopsFormSelect
     function addOptionUsers($gid=0) {
 	list($cuid) = $this->getValue();
 	$max = _CC_MAX_USERS;
-	$start = isset($_REQUEST['start'])?intval($_REQUEST['start']):0;
+	$start = isset($_REQUEST['start'])? (int)$_REQUEST['start'] :0;
 	$users = cc_group_users($gid, $max, $start);
 	$opts = $this->getOptions();
 
@@ -29,7 +29,7 @@ class MyFormSelect extends XoopsFormSelect
     }
 
     function setPageNav($gid) {
-	$start = isset($_REQUEST['start'])?intval($_REQUEST['start']):0;
+	$start = isset($_REQUEST['start'])? (int)$_REQUEST['start'] :0;
 	$max = _CC_MAX_USERS;
 	$total = cc_group_users($gid, $max, $start, true);
 	$nav = new MyPageNav($total, $max, $start, 'start', $this->getName());
@@ -42,7 +42,7 @@ class MyFormSelect extends XoopsFormSelect
 
     function render(){
 	$name = $this->getName();
-	$s = htmlspecialchars(isset($_REQUEST[$name.'_s'])?$_REQUEST[$name.'_s']:"");
+	$s = htmlspecialchars($_REQUEST[$name . '_s'] ?? "");
 	$slab  = htmlspecialchars($this->slab);
 	return "<table cellpadding='0'>\n<tr valign='top'>".
 	    "<td align='center'>".parent::render().
@@ -114,4 +114,3 @@ function setSelectUID(name, start) {
 	return $js;
     }
 }
-?>

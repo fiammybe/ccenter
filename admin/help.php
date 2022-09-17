@@ -4,7 +4,7 @@
 
 include '../../../include/cp_header.php';
 global $mydirpath, $mydirname;
-$mydirpath = dirname(dirname(__FILE__));
+$mydirpath = dirname(__FILE__, 2);
 $mydirname = basename($mydirpath);
 
 // for compat older PHP 4.x
@@ -47,8 +47,10 @@ function display_lang_file($file, $link='') {
 	$help = "../$lang/$file";
     }
     $content = file_get_contents($help);
-    list($h, $b) = preg_split('/<\/?body>/', $content);
-    if (empty($b)) $b =& $content;
+    [$h, $b] = preg_split('/<\/?body>/', $content);
+    if (empty($b)) {
+        $b =& $content;
+    }
     $murl = ICMS_URL.'/modules/'.icms::$module->getVar('dirname');
 
     if (preg_match('/<link[^>]*>/', $b, $match)) {
@@ -76,5 +78,3 @@ function display_lang_file($file, $link='') {
 	);
     echo '<div class="help">'.preg_replace($pat, $rep, $b).'</div>';
 }
-
-?>

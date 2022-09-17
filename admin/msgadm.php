@@ -11,7 +11,7 @@ if (isset($_POST['store'])) {
     $touid = (int) $_POST['touid'];
     $stat = icms_core_DataFilter::stripSlashesGPC($_POST['status']);
     $res = icms::$xoopsDB->query("SELECT * FROM ".CCMES." WHERE msgid=".$msgid);
-    $back = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:"msgadm.php";
+    $back = $_SERVER['HTTP_REFERER'] ?? "msgadm.php";
     if ($res && icms::$xoopsDB->getRowsNum($res)==1) {
 	$data = icms::$xoopsDB->fetchArray($res);
 	$sets = array();
@@ -29,7 +29,7 @@ if (isset($_POST['store'])) {
 	}
 	if (count($sets)) {
 	    $sets[] = 'mtime='.time();
-	    $res = icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(",", $sets)." WHERE msgid=".$msgid);
+	    $res = icms::$xoopsDB->query("UPDATE ".CCMES." SET ".implode(",", $sets)." WHERE msgid=".$msgid);
 	    if ($res && $touid) { // switch person in charge
 		$notification_handler =& xoops_gethandler('notification');
 		$notification_handler->subscribe('message', $msgid, 'comment', null, null, $touid);
@@ -46,7 +46,7 @@ if (isset($_POST['store'])) {
     foreach ($_POST['ids'] as $msgid) {
 	change_message_status($msgid, 0, $op);
     }
-    $back = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:"msgadm.php";
+    $back = $_SERVER['HTTP_REFERER'] ?? "msgadm.php";
     redirect_header($back, 1, _AM_MSG_UPDATED);
 }
 
@@ -55,7 +55,7 @@ icms_cp_header();
 icms::$module->displayAdminMenu(1);
 
 if (empty($_GET['msgid'])) msg_list();
-else msg_detail(intval($_GET['msgid']));
+else msg_detail((int)$_GET['msgid']);
 
 icms_cp_footer();
 
@@ -82,12 +82,12 @@ function msg_list() {
 LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
     $sql1 = "LEFT JOIN $comms ON com_modid=$mid AND com_itemid=msgid";
     $sql2 = "WHERE ".$listctrl->sqlcondition();
-    $formid = isset($_REQUEST['formid'])?intval($_REQUEST['formid']):0;
+    $formid = isset($_REQUEST['formid'])? (int)$_REQUEST['formid'] :0;
     if ($formid) $sql2 .= " AND fidref=$formid";
     if ($search) $sql2 .= " AND CONCAT(body,' ',m.email) like ".icms::$xoopsDB->quoteString("%$search%");
 
     $res = icms::$xoopsDB->query("SELECT count(msgid) $sql0 $sql2");
-    list($total) = icms::$xoopsDB->fetchRow($res);
+    [$total] = icms::$xoopsDB->fetchRow($res);
     $args = $formid?"formid=$formid":"";
     $nav = new icms_view_PageNav($total, $max, $start, "start", $args);
 
@@ -121,7 +121,7 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
 	}
 	echo "</tr>\n";
 	$n = 0;
-	$dirname = basename(dirname(dirname(__FILE__)));
+	$dirname = basename(dirname(__FILE__, 2));
 	$mbase = ICMS_URL."/modules/$dirname";
 	$strcut = (ICMS_USE_MULTIBYTES && function_exists('mb_strcut'))?'mb_strcut':'substr';
 	if (!function_exists('easiestml')) { /* XXX: support multi lang site */
@@ -269,4 +269,3 @@ function ccUname($uid) {
     if ($uid<=0) return _CC_USER_NONE;
     return icms_member_user_Object::getUnameFromId($uid);
 }
-?>

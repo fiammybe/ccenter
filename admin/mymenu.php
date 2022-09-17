@@ -4,7 +4,9 @@
 if( defined( 'ICMS_ORETEKI' ) ) return ;
 
 
-if( ! is_object( icms::$module ) ) die( 'icms::$module is not set' )  ;
+if( ! is_object( icms::$module ) ) {
+    die('icms::$module is not set');
+}
 
 // language files (modinfo.php)
 $language = empty( $icmsConfig['language'] ) ? 'english' : $icmsConfig['language'] ;

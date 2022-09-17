@@ -5,20 +5,22 @@ include '../functions.php';
 include_once 'myformselect.php';
 
 // option variables form definitions
-define('_CC_OPTDEFS',"notify_with_email,radio,1="._YES.",="._NO."
+const _CC_OPTDEFS = "notify_with_email,radio,1=" . _YES . ",=" . _NO . "
 redirect,text,size=60
 reply_comment,textarea,cols=60,rows=10
-reply_use_comtpl,radio,1="._YES.",="._NO."
-others,textarea");
+reply_use_comtpl,radio,1=" . _YES . ",=" . _NO . "
+others,textarea";
 icms_cp_header();
 $op = isset($_GET['op']) ? filter_input(INPUT_GET, 'op', FILTER_SANITIZE_STRING) : '';
-if (isset($_POST['op'])) $op = filter_input(INPUT_POST, 'op', FILTER_SANITIZE_STRING);
+if (isset($_POST['op'])) {
+    $op = filter_input(INPUT_POST, 'op', FILTER_SANITIZE_STRING);
+}
 $formid = isset($_REQUEST['formid']) ? (int) $_REQUEST['formid'] : 0;
 
 $fields = array('title', 'description', 'defs', 'priuid', 'cgroup',
 		'store', 'custom', 'weight', 'active');
 $optfields = array();
-if ($op == 'delform') {
+if ($op === 'delform') {
     $formid = filter_input(INPUT_POST, 'formid', FILTER_SANITIZE_NUMBER_INT);
     icms::$xoopsDB->query("DELETE FROM ".FORMS." WHERE formid=".$formid);
     icms::$xoopsDB->query("DELETE FROM ".CCMES." WHERE fidref=".$formid);
@@ -27,7 +29,9 @@ if ($op == 'delform') {
     // NOTE: add function delete notifications
     redirect_header('index.php', 1, _AM_FORM_DELETED);
     exit;
-} elseif (isset($_POST['formdefs']) && !isset($_POST['preview'])) {
+}
+
+if (isset($_POST['formdefs']) && !isset($_POST['preview'])) {
     $formid = filter_input(INPUT_POST, 'formid', FILTER_SANITIZE_NUMBER_INT);
     $data = $vals = array();
     foreach ($fields as $fname) {
@@ -58,7 +62,7 @@ if ($op == 'delform') {
     } else {
 	$vals['grpperm'] = $v;
 	$vals['mtime'] = time();
-	$res = icms::$xoopsDB->query("INSERT INTO ".FORMS."(".join(',', array_keys($vals)).") VALUES(".join(',', $vals).")");
+	$res = icms::$xoopsDB->query("INSERT INTO ".FORMS."(".implode(',', array_keys($vals)).") VALUES(".implode(',', $vals).")");
 	$formid = icms::$xoopsDB->getInsertID();
     }
     if (check_form_tags($data['custom'], $data['defs'],$data['description'])) {
@@ -76,7 +80,7 @@ if ($op == 'delform') {
 
 if( ! empty( $_GET['lib'] ) ) {
     global $mydirpath;
-    $mydirpath = dirname(dirname(__FILE__));
+    $mydirpath = dirname(__FILE__, 2);
     $mydirname = basename($mydirpath);
     // common libs (eg. altsys)
     $lib = preg_replace( '/[^a-zA-Z0-9_-]/' , '' , $_GET['lib'] ) ;
@@ -115,7 +119,7 @@ function post_optvars() {
     $vars = array();
     foreach ($items as $item) {
 	$fname = $item['name'];
-	if ($fname == "others") {
+	if ($fname === "others") {
 	    foreach (unserialize_vars($item['value']) as $k=>$v) {
 		$vars[$k] = $v;
 	    }
@@ -128,7 +132,7 @@ function post_optvars() {
 
 function list_forms() {
     //global $xoopsUser;
-    $dirname = basename(dirname(dirname(__FILE__)));
+    $dirname = basename(dirname(__FILE__, 2));
     $res = icms::$xoopsDB->query("SELECT formid,title,count(msgid) nmes,priuid,cgroup,
 sum(if(status='-',1,0)) nwait,
 sum(if(status='a',1,0)) nwork,
@@ -136,7 +140,7 @@ sum(if(status='b',1,0)) nreply,
 sum(if(status='c',1,0)) nclose,
 store
 FROM ".FORMS." LEFT JOIN ".CCMES." ON fidref=formid AND status<>'x' GROUP BY formid");
-    if (!$res || icms::$xoopsDB->getRowsNum($res)==0) return false;
+    if (!$res || icms::$xoopsDB->getRowsNum($res)===0) return false;
     echo "<style>td.num { text-align: right; }</style>";
     echo "<table class='outer' border='0' cellspacing='1'>\n";
     echo "<tr><th>ID</th><th>"._AM_FORM_TITLE."</th><th>"._AM_FORM_PRIM_CONTACT."</th><th>"._AM_MSG_COUNT."</th><th>"._AM_MSG_WAIT."</th><th>"._AM_MSG_WORK."</th><th>"._AM_MSG_REPLY."</th><th>"._AM_MSG_CLOSE."</th><th>"._AM_OPERATION."</th></tr>\n";
@@ -175,7 +179,7 @@ FROM ".FORMS." LEFT JOIN ".CCMES." ON fidref=formid AND status<>'x' GROUP BY for
 <td>$contact</td>";
 	foreach ($msgs as $stat=>$name) {
 	    $value=$data[$name];
-	    if ($data['store']==_DB_STORE_YES) {
+	    if ($data['store']===_DB_STORE_YES) {
 		$value = sprintf($ancfmt, urlencode($stat), $id, $value);
 	    } else {
 		$value = $value?sprintf($ancfmt, urlencode($stat), $id, $value):$nodata;
@@ -190,7 +194,7 @@ FROM ".FORMS." LEFT JOIN ".CCMES." ON fidref=formid AND status<>'x' GROUP BY for
 
 function build_form($formid=0) {
     global $fields, $icmsConfig, $xoopsTpl;
-    include_once dirname(dirname(__FILE__))."/language/".$icmsConfig['language'].'/main.php';
+    include_once dirname(__FILE__, 2) ."/language/".$icmsConfig['language'].'/main.php';
 
     if (isset($_POST['formid'])) {
 	$data = array();
@@ -201,7 +205,7 @@ function build_form($formid=0) {
 	}
 	$data['optvars'] = post_optvars();
 	$data['grpperm'] = $_POST['grpperm'];
-	$formid = intval($_POST['formid']);
+	$formid = (int)$_POST['formid'];
 	// form preview
 	get_attr_value($data['optvars']); // set default values
 	$items = get_form_attribute($data['defs']);
@@ -232,7 +236,9 @@ function build_form($formid=0) {
     $form = new icms_form_Theme($formid?_AM_FORM_EDIT:_AM_FORM_NEW, 'myform', 'index.php');
     $form->addElement(new icms_form_elements_Hidden('formid', $formid));
     $form->addElement(new icms_form_elements_Text(_AM_FORM_TITLE, 'title', 35, 80, $data['title']), true);
-    if (!empty($data['mtime'])) $form->addElement(new icms_form_elements_Label(_AM_FORM_MTIME, formatTimestamp($data['mtime'])));
+    if (!empty($data['mtime'])) {
+        $form->addElement(new icms_form_elements_Label(_AM_FORM_MTIME, formatTimestamp($data['mtime'])));
+    }
     $desc = new icms_form_elements_Tray(_AM_FORM_DESCRIPTION, "<br/>");
     $description = $data['description'];
     $editor = get_attr_value(null, 'use_fckeditor');
@@ -247,12 +253,16 @@ function build_form($formid=0) {
 	$desc->addElement($button);
     }
     $error = check_form_tags($data['custom'], $data['defs'], $description);
-    if ($error) $desc->addElement(new icms_form_elements_Label('', "<div style='color:red;'>$error</div>"));
+    if ($error) {
+        $desc->addElement(new icms_form_elements_Label('', "<div style='color:red;'>$error</div>"));
+    }
     $form->addElement($desc);
     $custom = new icms_form_elements_Select(_AM_FORM_CUSTOM, 'custom' , $data['custom']);
     $custom->setExtra(' onChange="myform.ins_tpl.disabled = (this.value==0||this.value==4);"');
     $custom_type = unserialize_vars(_AM_CUSTOM_DESCRIPTION);
-    if ($editor) unset($custom_type[0]);
+    if ($editor) {
+        unset($custom_type[0]);
+    }
     $custom->addOptionArray($custom_type);
     $form->addElement($custom);
     $grpperm = new icms_form_elements_select_Group(_AM_FORM_ACCEPT_GROUPS, 'grpperm', true, $data['grpperm'], 4, true);
@@ -349,11 +359,11 @@ function build_form($formid=0) {
     echo "<a name='form'></a>";
     $form->display();
     if ($editor) {
-	$base = ICMS_URL."/common/fckeditor";
+	$base = ICMS_URL."/common/ckeditor";
 	global $xoopsTpl;
 	echo "<script type='text/javascript' src='$base/fckeditor.js'></script>\n";
 	$editor =
-"var ccFCKeditor = new FCKeditor('description', '100%', '350', '$editor');
+"var ccFCKeditor = new CKeditor('description', '100%', '350', '$editor');
 ccFCKeditor.BasePath = '$base/';
 ccFCKeditor.ReplaceTextarea();";
     }
@@ -419,4 +429,3 @@ document.myform.ins_tpl.disabled = (fvalue==0 || fvalue==4);
 </script>
 ';
 }
-?>
