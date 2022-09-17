@@ -8,7 +8,7 @@ if( ! is_object( icms::$module ) ) die( 'icms::$module is not set' )  ;
 
 // language files (modinfo.php)
 $language = empty( $icmsConfig['language'] ) ? 'english' : $icmsConfig['language'] ;
-$mydirpath = dirname(dirname(__FILE__));
+$mydirpath = dirname(__FILE__, 2);
 $mydirname = basename($mydirpath);
 if( file_exists( "$mydirpath/language/$language/modinfo.php" ) ) {
 	// user customized language file
@@ -18,7 +18,7 @@ if( file_exists( "$mydirpath/language/$language/modinfo.php" ) ) {
 	include_once "$mydirpath/language/english/modinfo.php" ;
 }
 
-include dirname(__FILE__).'/menu.php' ;
+include __DIR__ .'/menu.php' ;
 
 $use_altsys = file_exists( ICMS_TRUST_PATH.'/libs/altsys/mytplsadmin.php' ) ;
 if( $use_altsys ) {
@@ -30,9 +30,9 @@ if( $use_altsys ) {
     if( count( $config_handler->getConfigs( new icms_db_criteria_Item( 'conf_modid' , icms::$module->getVar ('mid') ) ) ) > 0 ) {
 	if (defined('ICMS_CUBE_LEGACY')) {
 		// system->preferences
-		array_push( $adminmenu , array( 'title' => _PREFERENCES , 'link' => ICMS_URL.'/modules/legacy/admin/index.php?action=PreferenceEdit&confmod_id='.icms::$module->getVar ('mid') ) ) ;
+		$adminmenu[] = array('title' => _PREFERENCES, 'link' => ICMS_URL . '/modules/legacy/admin/index.php?action=PreferenceEdit&confmod_id=' . icms::$module->getVar('mid'));
 	} else {
-		array_push( $adminmenu , array( 'title' => _PREFERENCES , 'link' => ICMS_URL.'/modules/system/admin.php?fct=preferences&op=showmod&mod='.icms::$module->getVar ('mid') ) ) ;
+		$adminmenu[] = array('title' => _PREFERENCES, 'link' => ICMS_URL . '/modules/system/admin.php?fct=preferences&op=showmod&mod=' . icms::$module->getVar('mid'));
 	}
     }
 }
@@ -44,7 +44,7 @@ $mymenu_link = substr( strstr( $mymenu_uri , '/admin/' ) , 1 ) ;
 
 // highlight
 foreach( array_keys( $adminmenu ) as $i ) {
-	if( $mymenu_link == $adminmenu[$i]['link'] ) {
+	if( $mymenu_link === $adminmenu[$i]['link'] ) {
 		$adminmenu[$i]['selected'] = true ;
 		$adminmenu_hilighted = true ;
 		$GLOBALS['altsysAdminPageTitle'] = $adminmenu[$i]['title'] ;
@@ -89,5 +89,3 @@ if ( $use_altsys ) {
 	}
 	echo "</div>\n<hr style='clear:left;display:block;' />\n" ;
  }
-
-?>
