@@ -17,7 +17,7 @@ include ICMS_ROOT_PATH."/header.php";
 
 // query from login user
 if (icms::$user->isAdmin(icms::$module->getVar('mid'))) {
-    if (isset($_GET['uid'])) $uid = intval($_GET['uid']);
+    if (isset($_GET['uid'])) $uid = (int)$_GET['uid'];
 }
 
 $labels=array('mtime'=>_MD_POSTDATE, 'formid'=>_MD_CONTACT_FORM,
@@ -30,7 +30,7 @@ $listctrl = new ListCtrl('mylist', $orders);
 $cond = " AND ".$listctrl->sqlcondition();
 
 if (isset($_GET['form'])) {
-    $cond .= " AND formid=".intval($_GET['form']);
+    $cond .= " AND formid=". (int)$_GET['form'];
 }
 
 $sqlx = "FROM ".CCMES." m,".FORMS." WHERE uid=$uid $cond AND fidref=formid";
@@ -38,7 +38,7 @@ $sqlx = "FROM ".CCMES." m,".FORMS." WHERE uid=$uid $cond AND fidref=formid";
 $res = icms::$xoopsDB->query("SELECT count(msgid) $sqlx");
 list($total) = icms::$xoopsDB->fetchRow($res);
 $max = icms::$module->config['max_lists'];
-$start = isset($_GET['start'])?intval($_GET['start']):0;
+$start = isset($_GET['start'])? (int)$_GET['start'] :0;
 
 $nav = new icms_view_PageNav($total, $max, $start, "start");
 $xoopsTpl->assign('pagenav', $total>$max?$nav->renderNav():"");
@@ -57,4 +57,3 @@ while ($data = icms::$xoopsDB->fetchArray($res)) {
 $xoopsTpl->assign('list', $list);
 
 include ICMS_ROOT_PATH."/footer.php";
-?>
