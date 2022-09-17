@@ -55,8 +55,12 @@ icms_cp_header();
 
 icms::$module->displayAdminMenu(1);
 
-if (empty($_GET['msgid'])) msg_list();
-else msg_detail((int)$_GET['msgid']);
+if (empty($_GET['msgid'])) {
+    msg_list();
+}
+else {
+    msg_detail((int)$_GET['msgid']);
+}
 
 icms_cp_footer();
 
