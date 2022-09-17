@@ -52,7 +52,7 @@ if (isset($_POST['formdefs']) && !isset($_POST['preview'])) {
     }
     $v = '|';
     foreach ($_POST['grpperm'] as $gid) {
-	$v .= intval($gid)."|";
+	$v .= (int)$gid ."|";
     }
     $v = icms::$xoopsDB->quoteString($v);
     if ($formid) {
