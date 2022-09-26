@@ -47,7 +47,7 @@ $modversion['sqlfile']['mysql'] = "sql/mysql.sql";
 
 // Tables created by sql file (without prefix!)
 $modversion['tables'][] = "ccenter_form";
-$modversion['tables'][] = "ccenter_message";
+//$modversion['tables'][] = "ccenter_message";
 $modversion['tables'][] = "ccenter_log";
 
 // OnUpdate - upgrade DATABASE
@@ -60,6 +60,9 @@ $modversion['onInstall'] = "oninstall.php";
 $modversion['hasAdmin'] = 1;
 $modversion['adminindex'] = "admin/help.php";
 $modversion['adminmenu'] = "admin/menu.php";
+
+/** Database information */
+$modversion['object_items']  = array('message');
 
 // Menu
 $modversion['hasMain'] = 1;
