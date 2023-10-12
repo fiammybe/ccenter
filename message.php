@@ -70,4 +70,3 @@ $xoopsTpl->assign(
 include ICMS_ROOT_PATH.'/include/comment_view.php';
 
 include ICMS_ROOT_PATH."/footer.php";
-?>

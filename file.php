@@ -35,4 +35,3 @@ if ($_SERVER["REQUEST_METHOD"]=="GET") {
     header('Content-Disposition: inline;filename="'.$file.'"');
     print file_get_contents($path);
 }
-?>

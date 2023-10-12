@@ -44,4 +44,3 @@ function ccenter_notify_iteminfo($category, $item_id)
     }
     return $item;
 }
-?>

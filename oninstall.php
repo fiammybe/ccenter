@@ -20,4 +20,3 @@ function ccenter_sample_form()
     icms::$xoopsDB->query('INSERT INTO '.FORM."(".join(',', array_keys($data)).")VALUES(".join(',', $data).")");
     $msgs[] = '&nbsp;&nbsp;<b>'._MI_SAMPLE_FORM."</b>";
 }
-?>

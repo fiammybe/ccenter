@@ -1057,7 +1057,7 @@ class XoopsBreadcrumbs {
     var $moddir;
     var $pairs;
 
-    function XoopsBreadcrumbs() {
+    function __constructor() {
 	global $xoopsTpl;
 	$this->moddir = ICMS_URL."/modules/".icms::$module->getVar('dirname').'/';
 	$this->pairs = array(array('name'=>icms::$module->getVar('name'), 'url'=>$this->moddir));
@@ -1081,4 +1081,3 @@ class XoopsBreadcrumbs {
     }
 
 }
-?>

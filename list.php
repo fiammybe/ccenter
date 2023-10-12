@@ -57,4 +57,3 @@ while ($data = icms::$xoopsDB->fetchArray($res)) {
 $xoopsTpl->assign('list', $list);
 
 include ICMS_ROOT_PATH."/footer.php";
-?>

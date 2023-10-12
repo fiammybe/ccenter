@@ -70,4 +70,3 @@ function report_message($msg) {
     }
     $msgs[] = "&nbsp;&nbsp; $msg";
 }
-?>
