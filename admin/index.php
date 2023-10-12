@@ -76,7 +76,7 @@ if ($op == 'delform') {
 
 if( ! empty( $_GET['lib'] ) ) {
     global $mydirpath;
-    $mydirpath = dirname(dirname(__FILE__));
+    $mydirpath = dirname(__FILE__, 2);
     $mydirname = basename($mydirpath);
     // common libs (eg. altsys)
     $lib = preg_replace( '/[^a-zA-Z0-9_-]/' , '' , $_GET['lib'] ) ;
@@ -128,7 +128,7 @@ function post_optvars() {
 
 function list_forms() {
     //global $xoopsUser;
-    $dirname = basename(dirname(dirname(__FILE__)));
+    $dirname = basename(dirname(__FILE__, 2));
     $res = icms::$xoopsDB->query("SELECT formid,title,count(msgid) nmes,priuid,cgroup,
 sum(if(status='-',1,0)) nwait,
 sum(if(status='a',1,0)) nwork,
@@ -190,7 +190,7 @@ FROM ".FORMS." LEFT JOIN ".CCMES." ON fidref=formid AND status<>'x' GROUP BY for
 
 function build_form($formid=0) {
     global $fields, $icmsConfig, $xoopsTpl;
-    include_once dirname(dirname(__FILE__))."/language/".$icmsConfig['language'].'/main.php';
+    include_once dirname(__FILE__, 2) ."/language/".$icmsConfig['language'].'/main.php';
 
     if (isset($_POST['formid'])) {
 	$data = array();
@@ -419,4 +419,3 @@ document.myform.ins_tpl.disabled = (fvalue==0 || fvalue==4);
 </script>
 ';
 }
-?>

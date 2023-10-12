@@ -8,7 +8,7 @@ if( ! is_object( icms::$module ) ) die( 'icms::$module is not set' )  ;
 
 // language files (modinfo.php)
 $language = empty( $icmsConfig['language'] ) ? 'english' : $icmsConfig['language'] ;
-$mydirpath = dirname(dirname(__FILE__));
+$mydirpath = dirname(__FILE__, 2);
 $mydirname = basename($mydirpath);
 if( file_exists( "$mydirpath/language/$language/modinfo.php" ) ) {
 	// user customized language file
@@ -89,5 +89,3 @@ if ( $use_altsys ) {
 	}
 	echo "</div>\n<hr style='clear:left;display:block;' />\n" ;
  }
-
-?>

@@ -18,4 +18,3 @@ foreach (cc_group_users($group, $max, $start) as $uid=>$uname) {
 echo "<!---->\n";
 $nav = new MyPageNav($total, $max, $start);
 echo $nav->renderNav();
-?>

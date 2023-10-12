@@ -269,4 +269,3 @@ function ccUname($uid) {
     if ($uid<=0) return _CC_USER_NONE;
     return icms_member_user_Object::getUnameFromId($uid);
 }
-?>

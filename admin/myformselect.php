@@ -115,4 +115,3 @@ function setSelectUID(name, start) {
 	return $js;
     }
 }
-?>
