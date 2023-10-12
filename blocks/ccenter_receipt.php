@@ -4,7 +4,7 @@
 
 global $icmsConfig;
 
-$moddir = dirname(dirname(__FILE__));
+$moddir = dirname(__FILE__, 2);
 $lang = $icmsConfig['language'];
 $main = "$moddir/language/$lang/main.php";
 if (!file_exists($main)) $main = "$moddir/language/english/main.php";
@@ -34,7 +34,7 @@ function b_ccenter_receipt_show($options) {
 	$data['statstr'] = $msg_status[$data['status']];
 	$list[] = $data;
     }
-    $mydir = basename(dirname(dirname(__FILE__)));
+    $mydir = basename(dirname(__FILE__, 2));
     return array('list'=>$list, 'dirname'=>$mydir);
 }
 
@@ -57,4 +57,3 @@ function b_ccenter_receipt_edit($options) {
     $ln .= "</div>\n";
     return $ln;
 }
-?>

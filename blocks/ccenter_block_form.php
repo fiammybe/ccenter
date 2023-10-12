@@ -4,7 +4,7 @@
 
 global $icmsConfig;
 
-$moddir = dirname(dirname(__FILE__));
+$moddir = dirname(__FILE__, 2);
 $lang = $icmsConfig['language'];
 $main = "$moddir/language/$lang/main.php";
 if (!file_exists($main)) $main = "$moddir/language/english/main.php";
