@@ -59,11 +59,3 @@ define("_MI_SAMPLE_FORM","Create sample form");
 define("_MI_SAMPLE_TITLE","Kontaktformular");
 define("_MI_SAMPLE_DESC","Füllen Sie bitte einfach das Formular aus, wenn Sie uns etwas mitteilen möchten");
 define("_MI_SAMPLE_DEFS","Ihr Name*,size=40\nEmail*,mail,size=60\nInfos zu*,radio,Information,Produkte,Sonstiges\nMeine Auswahl,checkbox,Rot,Grün,Blau\nGröße auswählen,select,Groß,Normal,Klein\nNachricht*,textarea,cols=50,rows=5\nSie können uns auch Dateien senden\nDatei anhängen,file,size=60\nBewertung: Ihre Seite finde ich,radio,sehr gut+,gut<br/>,*=andere");
-
-// for altsys 
-if (!defined('_MD_A_MYMENU_MYTPLSADMIN')) {
-    define('_MD_A_MYMENU_MYTPLSADMIN','Templates');
-    define('_MD_A_MYMENU_MYBLOCKSADMIN','Blöcke/Gruppen');
-    define('_MD_A_MYMENU_MYPREFERENCES','Einstellungen');
-}
-?>

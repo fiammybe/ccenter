@@ -3,68 +3,59 @@
 // Module Info
 
 // The name of this module
-define("_MI_CCENTER_NAME","¤ªÌä¹ç¤»Áë¸ý");
+define("_MI_CCENTER_NAME","ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½");
 
 // A brief description of this module
-define("_MI_CCENTER_DESC","¥Õ¥©¡¼¥à¤ò»È¤Ã¤¿Ìä¤¤¹ç¤ï¤»¤ÎÃßÀÑ¤È´ÉÍý");
+define("_MI_CCENTER_DESC","ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¤Ã¤ï¿½ï¿½ä¤¤ï¿½ï¿½ï¤»ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¤È´ï¿½ï¿½ï¿½");
 
 // Sub Menu
-define("_MI_CCENTER_MYCONTACT", "¤¢¤Ê¤¿¤ÎÌä¹ç¤»");
-define("_MI_CCENTER_MYCHARGE", "Ã´ÅöÌä¹ç¤»");
-define("_MI_CCENTER_STAFFDESK", "¼õÉÕÃ´Åö¥Ç¥¹¥¯");
+define("_MI_CCENTER_MYCONTACT", "ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½ç¤»");
+define("_MI_CCENTER_MYCHARGE", "Ã´ï¿½ï¿½ï¿½ï¿½ç¤»");
+define("_MI_CCENTER_STAFFDESK", "ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½Ç¥ï¿½ï¿½ï¿½");
 
 // Admin Menu
-define("_MI_CCENTER_FORMADMIN", "¥Õ¥©¡¼¥à¤ÎºîÀ®");
-define("_MI_CCENTER_MSGADMIN", "Ìä¹ç¤»´ÉÍý");
-define("_MI_CCENTER_HELP", "¤ªÌä¹ç¤»Áë¸ý¤Ë¤Ä¤¤¤Æ");
+define("_MI_CCENTER_FORMADMIN", "ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½");
+define("_MI_CCENTER_MSGADMIN", "ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_HELP", "ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½ï¿½Ë¤Ä¤ï¿½ï¿½ï¿½");
 
 // A brief template of this module
-define("_MI_CCENTER_INDEX_TPL", "¥Õ¥©¡¼¥à¤Î°ìÍ÷");
-define("_MI_CCENTER_FORM_TPL", "¤ªÌä¹ç¤»¥Õ¥©¡¼¥à");
-define("_MI_CCENTER_CUST_TPL", "¤ªÌä¹ç¤»¥Õ¥©¡¼¥à(¥«¥¹¥¿¥à)");
-define("_MI_CCENTER_CONF_TPL", "¥Õ¥©¡¼¥àÆþÎÏ¤Î³ÎÇ§");
-define("_MI_CCENTER_LIST_TPL", "¤¢¤Ê¤¿¤ÎÌä¹ç¤»°ìÍ÷");
-define("_MI_CCENTER_CHARGE_TPL", "Ã´ÅöÌä¤¤¹ç¤ï¤»°ìÍ÷");
-define("_MI_CCENTER_MSGS_TPL", "¥á¥Ã¥»¡¼¥¸É½¼¨");
-define("_MI_CCENTER_RECEPT_TPL", "¼õÉÕÃ´Åö¥Ç¥¹¥¯");
-define("_MI_CCENTER_WIDGET_TPL", "¥Õ¥©¡¼¥àÉôÉÊ");
+define("_MI_CCENTER_INDEX_TPL", "ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½Î°ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_FORM_TPL", "ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_CUST_TPL", "ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)");
+define("_MI_CCENTER_CONF_TPL", "ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¤Î³ï¿½Ç§");
+define("_MI_CCENTER_LIST_TPL", "ï¿½ï¿½ï¿½Ê¤ï¿½ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_CHARGE_TPL", "Ã´ï¿½ï¿½ï¿½ä¤¤ï¿½ï¿½ï¤»ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_MSGS_TPL", "ï¿½ï¿½Ã¥ï¿½ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½");
+define("_MI_CCENTER_RECEPT_TPL", "ï¿½ï¿½ï¿½ï¿½Ã´ï¿½ï¿½ï¿½Ç¥ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_WIDGET_TPL", "ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 
 // A brief blocks of this module
-define("_MI_CCENTER_BLOCK_RECEIPT","Ã´ÅöÌä¹ç¤»");
-define("_MI_CCENTER_BLOCK_FORM","¤ªÌä¹ç¤»¥Õ¥©¡¼¥à");
+define("_MI_CCENTER_BLOCK_RECEIPT","Ã´ï¿½ï¿½ï¿½ï¿½ç¤»");
+define("_MI_CCENTER_BLOCK_FORM","ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½");
 
 // Configs
-define("_MI_CCENTER_LISTS","°ìÍ÷É½¼¨¤Î¿ô");
-define("_MI_CCENTER_LISTS_DESC","°ìÍ÷É½¼¨¤ÇÉ½¼¨¤¹¤ë¹Ô¿ô¤ò»ØÄê¤¹¤ë");
-define("_MI_CCENTER_DEF_ATTRS","¥ª¥×¥·¥ç¥ó´ûÄêÃÍ");
-define("_MI_CCENTER_DEF_ATTRS_DESC","¥Õ¥©¡¼¥à¤ÎÍ×ÁÇ¤Ë»ØÄê¤¹¤ë<a href='../../ccenter/admin/help.php#attr'>¥ª¥×¥·¥ç¥óÊÑ¿ô</a>¤Ê¤É¤òÀßÄê¤¹¤ë¡£Îã <tt>size=60,rows=5,cols=50</tt>");
-define("_MI_CCENTER_STATUS_COMBO","¾õ¶·¤ÎÁªÂò»è");
-define("_MI_CCENTER_STATUS_COMBO_DESC","½ñ¼°¤Ï <tt>É½¼¨Ì¾: [¾õÂÖ1[,¾õÂÖ2...]]</tt> ¤òÊ£¿ô¹Ô»ØÄê¤¹¤ë¡£¾õÂÖ¤Ï (-,a,b,c) ¤ÎÊ¸»ú¤Ç»ØÄê¤¹¤ë¡£Îã <tt>ºî¶ÈÂÔ¤Á: - a</tt>");
-define("_MI_CCENTER_STATUS_COMBO_DEF","Á´Éô: - a b c\nºî¶ÈÂÔ¤Á: - a\nºî¶ÈºÑ¤ß: b c\n--------:\n¼õÉÕÂÔ: -\nºî¶ÈÃæ: a\n±þÅúºÑ: b\n´°Î»: c\n");
+define("_MI_CCENTER_LISTS","ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½ï¿½Î¿ï¿½");
+define("_MI_CCENTER_LISTS_DESC","ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½ï¿½ï¿½É½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¿ï¿½ï¿½ï¿½ï¿½ï¿½ê¤¹ï¿½ï¿½");
+define("_MI_CCENTER_DEF_ATTRS","ï¿½ï¿½ï¿½×¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_DEF_ATTRS_DESC","ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¤Ë»ï¿½ï¿½ê¤¹ï¿½ï¿½<a href='../../ccenter/admin/help.php#attr'>ï¿½ï¿½ï¿½×¥ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¿ï¿½</a>ï¿½Ê¤É¤ï¿½ï¿½ï¿½ï¿½ê¤¹ï¿½ë¡£ï¿½ï¿½ <tt>size=60,rows=5,cols=50</tt>");
+define("_MI_CCENTER_STATUS_COMBO","ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_STATUS_COMBO_DESC","ï¿½ñ¼°¤ï¿½ <tt>É½ï¿½ï¿½Ì¾: [ï¿½ï¿½ï¿½ï¿½1[,ï¿½ï¿½ï¿½ï¿½2...]]</tt> ï¿½ï¿½Ê£ï¿½ï¿½ï¿½Ô»ï¿½ï¿½ê¤¹ï¿½ë¡£ï¿½ï¿½ï¿½Ö¤ï¿½ (-,a,b,c) ï¿½ï¿½Ê¸ï¿½ï¿½ï¿½Ç»ï¿½ï¿½ê¤¹ï¿½ë¡£ï¿½ï¿½ <tt>ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½: - a</tt>");
+define("_MI_CCENTER_STATUS_COMBO_DEF","ï¿½ï¿½ï¿½ï¿½: - a b c\nï¿½ï¿½ï¿½ï¿½Ô¤ï¿½: - a\nï¿½ï¿½ÈºÑ¤ï¿½: b c\n--------:\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: -\nï¿½ï¿½ï¿½ï¿½ï¿½: a\nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: b\nï¿½ï¿½Î»: c\n");
 
 // Notifications
-define("_MI_CCENTER_GLOBAL_NOTIFY","Á´¥Õ¥©¡¼¥à");
-define("_MI_CCENTER_FORM_NOTIFY","¸ÄÊÌ¥Õ¥©¡¼¥à");
-define("_MI_CCENTER_MESSAGE_NOTIFY","¸ÄÊÌÌä¹ç¤»");
+define("_MI_CCENTER_GLOBAL_NOTIFY","ï¿½ï¿½ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_FORM_NOTIFY","ï¿½ï¿½ï¿½Ì¥Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_MESSAGE_NOTIFY","ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ç¤»");
 
-define("_MI_CCENTER_NEWPOST_NOTIFY","Ìä¹ç¤»¤¬¤¢¤ê¤Þ¤·¤¿");
-define("_MI_CCENTER_NEWPOST_NOTIFY_CAP","¤ªÌä¹ç¤»¤òÄÌÃÎ¤¹¤ë");
-define("_MI_CCENTER_NEWPOST_SUBJECT","Ìä¹ç¤»¤¬Á÷¿®¤µ¤ì¤Þ¤·¤¿");
+define("_MI_CCENTER_NEWPOST_NOTIFY","ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¤ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_NEWPOST_NOTIFY_CAP","ï¿½ï¿½ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½ï¿½ï¿½Î¤ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_NEWPOST_SUBJECT","ï¿½ï¿½ç¤»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¤ï¿½ï¿½ï¿½");
 
-define("_MI_CCENTER_STATUS_NOTIFY","¾õÂÖ¤ÎÊÑ¹¹");
-define("_MI_CCENTER_STATUS_NOTIFY_CAP","¾õ¶·¤¬ÊÑ¹¹¤µ¤ì¤¿¤éÄÌÃÎ¤¹¤ë");
-define("_MI_CCENTER_STATUS_SUBJECT","¾õÂÖÊÑ¹¹:[{X_MODULE}]{FORM_NAME}");
+define("_MI_CCENTER_STATUS_NOTIFY","ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½Ñ¹ï¿½");
+define("_MI_CCENTER_STATUS_NOTIFY_CAP","ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ì¤¿ï¿½ï¿½ï¿½ï¿½ï¿½Î¤ï¿½ï¿½ï¿½");
+define("_MI_CCENTER_STATUS_SUBJECT","ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¹ï¿½:[{X_MODULE}]{FORM_NAME}");
 
-define("_MI_SAMPLE_FORM","¥µ¥ó¥×¥ë¥Õ¥©¡¼¥à¤òºîÀ®¤·¤Þ¤·¤¿");
-define("_MI_SAMPLE_TITLE","¤ªÌä¤¤¹ç¤ï¤»");
-define("_MI_SAMPLE_DESC","ËÜ¥µ¥¤¥È¤Ø¤Î¤ªÌä¤¤¹ç¤ï¤»¤Ï¤³¤Á¤é¤Î¥Õ¥©¡¼¥à¤«¤é¤É¤¦¤¾¡£");
-define("_MI_SAMPLE_DEFS","¤ªÌ¾Á°*,size=40\n¥á¡¼¥ë*,mail,size=60\n¼ïÎà*,radio,·ÇºÜÆâÍÆ,²þÁ±Í×Ë¾,¤½¤ÎÂ¾\nÈ÷¹Í,textarea,cols=50,rows=5");
-
-// for altsys 
-if (!defined('_MD_A_MYMENU_MYTPLSADMIN')) {
-    define('_MD_A_MYMENU_MYLANGADMIN','¸À¸ìÄê¿ô´ÉÍý');
-    define('_MD_A_MYMENU_MYTPLSADMIN','¥Æ¥ó¥×¥ì¡¼¥È´ÉÍý');
-    define('_MD_A_MYMENU_MYBLOCKSADMIN','¥Ö¥í¥Ã¥¯/¥¢¥¯¥»¥¹´ÉÍý');
-    define('_MD_A_MYMENU_MYPREFERENCES','°ìÈÌÀßÄê');
-}
-?>
+define("_MI_SAMPLE_FORM","ï¿½ï¿½ï¿½ï¿½×¥ï¿½Õ¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¤ï¿½ï¿½ï¿½");
+define("_MI_SAMPLE_TITLE","ï¿½ï¿½ï¿½ä¤¤ï¿½ï¿½ï¤»");
+define("_MI_SAMPLE_DESC","ï¿½Ü¥ï¿½ï¿½ï¿½ï¿½È¤Ø¤Î¤ï¿½ï¿½ä¤¤ï¿½ï¿½ï¤»ï¿½Ï¤ï¿½ï¿½ï¿½ï¿½ï¿½Î¥Õ¥ï¿½ï¿½ï¿½ï¿½à¤«ï¿½ï¿½É¤ï¿½ï¿½ï¿½ï¿½ï¿½");
+define("_MI_SAMPLE_DEFS","ï¿½ï¿½Ì¾ï¿½ï¿½*,size=40\nï¿½á¡¼ï¿½ï¿½*,mail,size=60\nï¿½ï¿½ï¿½ï¿½*,radio,ï¿½Çºï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¾,ï¿½ï¿½ï¿½ï¿½Â¾\nï¿½ï¿½ï¿½ï¿½,textarea,cols=50,rows=5");
