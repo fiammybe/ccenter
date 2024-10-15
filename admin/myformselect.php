@@ -4,11 +4,11 @@
 
 include_once 'mypagenav.php';
 
-class MyFormSelect extends XoopsFormSelect
+class MyFormSelect extends icms_form_elements_Select
 {
 
-    function MyFormSelect($caption,$name,$value=null,$size=1,$multiple=false){
-	$this->XoopsFormSelect($caption, $name, $value, $size, $multiple);
+    function __constructor($caption,$name,$value=null,$size=1,$multiple=false){
+	parent::__constructor($caption, $name, $value, $size, $multiple);
 	$this->pagenav = '';
 	$this->slab = _SEARCH;
     }
