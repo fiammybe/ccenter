@@ -2,14 +2,12 @@
 # $Id$
 # page control for priuid select
 
-include_once ICMS_ROOT_PATH.'/class/pagenav.php';
-
 define('_CC_MAX_USERS', 100);	// users/page
 
-class MyPageNav extends XoopsPageNav {
+class MyPageNav extends icms_view_PageNav {
 
-    function MyPageNav($total, $items, $current, $name="start", $target='uid') {
-	$this->XoopsPageNav($total, $items, $current, $name);
+    function __construct($total, $items, $current, $name="start", $target='uid') {
+	parent::__construct($total, $items, $current, $name);
 	$this->target = $target;
     }
 
@@ -69,4 +67,3 @@ function cc_group_users($group=0, $max=_CC_MAX_USERS, $start=0, $count=false) {
     }
     return $options;
 }
-?>
