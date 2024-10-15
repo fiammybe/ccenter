@@ -4,6 +4,7 @@ include '../../../include/cp_header.php';
 include '../functions.php';
 include_once 'myformselect.php';
 
+$myts = icms_core_Textsanitizer::getInstance();
 $op = isset($_REQUEST['op'])?$myts->stripSlashesGPC($_REQUEST['op']):'';
 
 if (isset($_POST['store'])) {
@@ -31,7 +32,7 @@ if (isset($_POST['store'])) {
 	    $sets[] = 'mtime='.time();
 	    $res = icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(",", $sets)." WHERE msgid=".$msgid);
 	    if ($res && $touid) { // switch person in charge
-		$notification_handler =& xoops_gethandler('notification');
+		$notification_handler = icms::handler('icms_data_notification');
 		$notification_handler->subscribe('message', $msgid, 'comment', null, null, $touid);
 		$notification_handler->subscribe('message', $msgid, 'status', null, null, $touid);
 	    }
