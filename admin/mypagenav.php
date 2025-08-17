@@ -33,7 +33,7 @@ class MyPageNav extends icms_view_PageNav {
                 $ret .= sprintf($fmt, $prev, '<u>&laquo;</u>');
             }
             $counter = 1;
-            $current_page = intval(floor(($this->current + $this->perpage) / $this->perpage));
+            $current_page = (int)floor(($this->current + $this->perpage) / $this->perpage);
             while ( $counter <= $total_pages ) {
                 if ( $counter == $current_page ) {
                     $ret .= '<b>('.$counter.')</b> ';

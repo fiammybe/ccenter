@@ -16,7 +16,7 @@ if (is_object(icms::$user)) {
     foreach (icms::$user->getGroups() as $gid) {
 		$conds[] = "grpperm LIKE '%|$gid|%'";
     }
-    if ($conds) $cond .= " AND (".join(' OR ', $conds).")";
+    if ($conds) $cond .= " AND (".implode(' OR ', $conds).")";
 } else {
     $cond .= " AND grpperm LIKE '%|".ICMS_GROUP_ANONYMOUS."|%'";
 }
@@ -49,11 +49,11 @@ $form = icms::$xoopsDB->fetchArray($res);
 get_attr_value($form['optvars']); // set default values
 $items = get_form_attribute($form['defs']);
 if ($form['priuid']< 0) {	// assign group member
-    $priuid = isset($_GET['uid'])?intval($_GET['uid']):0;
+    $priuid = isset($_GET['uid'])? (int)$_GET['uid'] :0;
     if ($priuid) {
-	$member_handler =& xoops_gethandler('member');
+	$member_handler =& icms::handler('icms_member');
 	$priuser = $member_handler->getUser($priuid);
-	if (!is_object($priuser) || !in_array(-$form['priuid'], $priuser->groups())) $priuid=0;
+	if (!is_object($priuser) || !in_array(-$form['priuid'], $priuser->getGroups())) $priuid=0;
     }
     if (empty($priuid)) {
 	$back = isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:ICMS_URL;

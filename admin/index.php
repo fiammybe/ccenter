@@ -48,7 +48,7 @@ if ($op == 'delform') {
     }
     $v = '|';
     foreach ($_POST['grpperm'] as $gid) {
-	$v .= intval($gid)."|";
+	$v .= (int)$gid ."|";
     }
     $v = icms::$xoopsDB->quoteString($v);
     if ($formid) {
@@ -201,7 +201,7 @@ function build_form($formid=0) {
 	}
 	$data['optvars'] = post_optvars();
 	$data['grpperm'] = $_POST['grpperm'];
-	$formid = intval($_POST['formid']);
+	$formid = (int)$_POST['formid'];
 	// form preview
 	get_attr_value($data['optvars']); // set default values
 	$items = get_form_attribute($data['defs']);

@@ -56,7 +56,7 @@ icms_cp_header();
 icms::$module->displayAdminMenu(1);
 
 if (empty($_GET['msgid'])) msg_list();
-else msg_detail(intval($_GET['msgid']));
+else msg_detail((int)$_GET['msgid']);
 
 icms_cp_footer();
 
@@ -83,7 +83,7 @@ function msg_list() {
 LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
     $sql1 = "LEFT JOIN $comms ON com_modid=$mid AND com_itemid=msgid";
     $sql2 = "WHERE ".$listctrl->sqlcondition();
-    $formid = isset($_REQUEST['formid'])?intval($_REQUEST['formid']):0;
+    $formid = isset($_REQUEST['formid'])? (int)$_REQUEST['formid'] :0;
     if ($formid) $sql2 .= " AND fidref=$formid";
     if ($search) $sql2 .= " AND CONCAT(body,' ',m.email) like ".icms::$xoopsDB->quoteString("%$search%");
 
