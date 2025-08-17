@@ -19,7 +19,7 @@ function b_ccenter_form_show($options) {
 	foreach (icms::$user->getGroups() as $gid) {
 	    $conds[] = "grpperm LIKE '%|$gid|%'";
 	}
-	if ($conds) $cond .= " AND (".join(' OR ', $conds).")";
+	if ($conds) $cond .= " AND (".implode(' OR ', $conds).")";
     } else {
 	$cond .= " AND grpperm LIKE '%|".ICMS_GROUP_ANONYMOUS."|%'";
     }

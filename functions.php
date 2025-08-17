@@ -212,7 +212,7 @@ function get_form_attribute($defs, $labels='', $prefix="cc") {
     foreach (cc_csv_parse($defs) as $opts) {
 	if (empty($opts)) continue;
 	if (preg_match('/^#/', $opts[0])) {
-	    $result[] = array('comment'=>substr(join(',', $opts), 1));
+	    $result[] = array('comment'=>substr(implode(',', $opts), 1));
 	    continue;
 	}
 	$name = array_shift($opts);
@@ -257,13 +257,13 @@ function get_form_attribute($defs, $labels='', $prefix="cc") {
 	    }
 	    if (count($opts)) {
 		$opts[0] = preg_replace('/^\s*#/','', $opts[0]);
-		$comment = join(',',$opts);
+		$comment = implode(',',$opts);
 	    }
 	}
 	if ($type == 'radio') {
 	    $defs = $defs?$defs[0]:'';
 	} elseif ($type != 'checkbox') {
-	    $defs = eval_user_value(join(',', $options));
+	    $defs = eval_user_value(implode(',', $options));
 	}
 	if ($type=='date') {
 	    if (empty($defs)) $defs = formatTimestamp(time(), 'Y-m-d');
@@ -356,7 +356,7 @@ function assign_post_values(&$items) {
 				break;
 			case 'hidden':
 				case 'const':
-					$val = eval_user_value(join(',', $item['options']));
+					$val = eval_user_value(implode(',', $item['options']));
 				break;
 			case 'file':
 				$val = '';		// filename
@@ -427,7 +427,7 @@ function assign_form_widgets(&$items, $conf=false) {
 					$v = htmlspecialchars($v, ENT_QUOTES);
 					$input .= sprintf($fmt, $v);
 				}
-				$input .= htmlspecialchars(join(', ', $val), ENT_QUOTES);
+				$input .= htmlspecialchars(implode(', ', $val), ENT_QUOTES);
 			} else {
 				$v = htmlspecialchars($val, ENT_QUOTES);
 				switch ($item['type']) {
@@ -612,7 +612,7 @@ if (!function_exists("serialize_text")) {
     function serialize_text($array) {
 	$text = '';
 	foreach ($array as $name => $val) {
-	    if (is_array($val)) $val = join(', ', $val);
+	    if (is_array($val)) $val = implode(', ', $val);
 	    if (preg_match('/\n/', $val)) {
 		$val = preg_replace('/\n\r?/', "\n\t", $val);
 	    }
@@ -1323,7 +1323,7 @@ class ListCtrl {
     function sqlcondition($fname='status') {
 	$stat = $this->getVar('stat');
 	if (preg_match('/\s+/', $stat)) {
-	    return "$fname IN ('".join("','", preg_split('/\s+/',$stat))."')";
+	    return "$fname IN ('".implode("','", preg_split('/\s+/',$stat))."')";
 	}
 	return "$fname=".icms::$xoopsDB->quoteString($stat);
     }
@@ -1342,7 +1342,7 @@ class ListCtrl {
 	foreach ($this->getVar('orders') as $name) {
 	    $order[] = $name." ".$this->getVar($name);
 	}
-	if ($order) return " ORDER BY ".join(',', $order);
+	if ($order) return " ORDER BY ".implode(',', $order);
 	return "";
     }
 

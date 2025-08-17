@@ -54,11 +54,11 @@ if ($op == 'delform') {
     if ($formid) {
 	$vals[] = "grpperm=".$v;
 	$vals[] = "mtime=".time();
-	$res = icms::$xoopsDB->query("UPDATE ".FORMS." SET ".join(',', $vals)." WHERE formid=".$formid);
+	$res = icms::$xoopsDB->query("UPDATE ".FORMS." SET ".implode(',', $vals)." WHERE formid=".$formid);
     } else {
 	$vals['grpperm'] = $v;
 	$vals['mtime'] = time();
-	$res = icms::$xoopsDB->query("INSERT INTO ".FORMS."(".join(',', array_keys($vals)).") VALUES(".join(',', $vals).")");
+	$res = icms::$xoopsDB->query("INSERT INTO ".FORMS."(".implode(',', array_keys($vals)).") VALUES(".implode(',', $vals).")");
 	$formid = icms::$xoopsDB->getInsertID();
     }
     if (check_form_tags($data['custom'], $data['defs'],$data['description'])) {

@@ -14,7 +14,7 @@ $id = isset($_GET['form']) ? (int) $_GET['form'] : 0;
 $cond = 'formid='.$id;
 if (!icms::$user->isAdmin(icms::$module->getVar('mid'))) {
     $cond .= ' AND (priuid='.icms::$user->getVar('uid').
-	' OR cgroup IN ('.join(',', icms::$user->getGroups()).'))';
+	' OR cgroup IN ('.implode(',', icms::$user->getGroups()).'))';
 }
 
 $res = icms::$xoopsDB->query("SELECT formid,defs FROM ".FORMS." WHERE $cond");
@@ -109,12 +109,12 @@ function csv_str($data) {
     foreach ($data as $v) {
 	$vals[] = q($v);
     }
-    return join(',',$vals);
+    return implode(',',$vals);
 }
 
 function q($str) {
     if (is_array($str)) {
-	$str = join("\n",$str);
+	$str = implode("\n",$str);
     }
     if (preg_match('/^-?\d*$/', $str)) return $str;
     return '"'.preg_replace('/\"/', '""', $str).'"';

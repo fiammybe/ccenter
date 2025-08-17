@@ -146,7 +146,7 @@ function store_message($items, $form) {
 		    foreach ($val as $k=>$v) {
 			$val[$k] = isset($opts[$v])?strip_tags($opts[$v]):$v;
 		    }
-			$val = join(', ', $val);
+			$val = implode(', ', $val);
 			break;
 	}
 	if (!empty($val) && preg_match('/\n/', $val)) $val = "\n\t".preg_replace('/\n/', "\n\t", $val);
@@ -174,7 +174,7 @@ function store_message($items, $form) {
     }
 
     if ($store!=_DB_STORE_NONE) {
-	$res = icms::$xoopsDB->query("INSERT INTO ".CCMES. "(".join(',',array_keys($values)).") VALUES (".join(',', $values).")");
+	$res = icms::$xoopsDB->query("INSERT INTO ".CCMES. "(".implode(',',array_keys($values)).") VALUES (".implode(',', $values).")");
 	if ($res===false) return array("Error in DATABASE insert");
 	$id = icms::$xoopsDB->getInsertID();
 	if (empty($id)) return array("Internal Error in Store Message");

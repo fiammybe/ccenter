@@ -24,7 +24,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 			"comment=".icms::$xoopsDB->quoteString($com),
 			"comtime=$now", "atime=$now", "mtime=$now",
 			"status=".icms::$xoopsDB->quoteString(_STATUS_CLOSE));
-	icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(',',$values)." WHERE msgid=$msgid");
+	icms::$xoopsDB->query("UPDATE ".CCMES." SET ".implode(',',$values)." WHERE msgid=$msgid");
 	$log = _MD_EVALS." ($eval)";
 	$log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[_STATUS_CLOSE]);
 	$evalmsg = _MD_EVALS." ($eval)\n$com";

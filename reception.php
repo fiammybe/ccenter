@@ -14,7 +14,7 @@ $isadmin = icms::$user->isAdmin(icms::$module->getVar('mid'));
 if ($isadmin) $cond = "1";
 else {
     $cond = '(priuid='.icms::$user->getVar('uid').
-	' OR cgroup IN ('.join(',', icms::$user->getGroups()).'))';
+	' OR cgroup IN ('.implode(',', icms::$user->getGroups()).'))';
 }
 
 if ($id) $cond .= ' AND formid='.$id;

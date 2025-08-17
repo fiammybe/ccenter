@@ -30,7 +30,7 @@ if (isset($_POST['store'])) {
         }
         if (count($sets)) {
             $sets[] = 'mtime='.time();
-            $res = icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(",", $sets)." WHERE msgid=".$msgid);
+            $res = icms::$xoopsDB->query("UPDATE ".CCMES." SET ".implode(",", $sets)." WHERE msgid=".$msgid);
             if ($res && $touid) { // switch person in charge
                 $notification_handler =& xoops_gethandler('notification');
                 $notification_handler->subscribe('message', $msgid, 'comment', null, null, $touid);
