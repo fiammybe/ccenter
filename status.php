@@ -19,7 +19,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 	
     if (is_cc_evaluate($msgid, $uid, $pass)) {
 	$res = icms::$xoopsDB->query("SELECT fidref,status FROM ".CCMES." WHERE msgid=$msgid");
-	list($formid, $s) = icms::$xoopsDB->fetchRow($res);
+	[$formid, $s] = icms::$xoopsDB->fetchRow($res);
 	$values = array("value=$eval",
 			"comment=".icms::$xoopsDB->quoteString($com),
 			"comtime=$now", "atime=$now", "mtime=$now",
@@ -28,7 +28,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 	$log = _MD_EVALS." ($eval)";
 	$log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[_STATUS_CLOSE]);
 	$evalmsg = _MD_EVALS." ($eval)\n$com";
-	$tags = array('X_COMMENT_URL'=>ICMS_URL."/modules/".basename(dirname(__FILE__))."/message.php?id=$msgid\n\n".$evalmsg);
+	$tags = array('X_COMMENT_URL'=>ICMS_URL."/modules/".basename(__DIR__)."/message.php?id=$msgid\n\n".$evalmsg);
 	$notification_handler =& icms::handler('icms_data_notification');
 		$notification_handler->triggerEvent('message', $msgid, 'comment', $tags);
 	cc_log_message($formid, $log, $msgid);
@@ -39,7 +39,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 } elseif (!empty($_POST['status'])) {
     $stat = icms_core_DataFilter::stripSlashesGPC($_POST['status']);
     $res = icms::$xoopsDB->query("SELECT fidref FROM ".CCMES." WHERE msgid = $msgid");
-    list($fid) = icms::$xoopsDB->fetchRow($res);
+    [$fid] = icms::$xoopsDB->fetchRow($res);
     if (change_message_status($msgid, $uid, $stat)) {
 		if ($stat=='x') {
 			$redirect = "reception.php?form=$fid"; // delete the message
@@ -53,7 +53,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
     case 'myself':
 	$res = icms::$xoopsDB->query("SELECT fidref,status,title FROM ".CCMES." LEFT JOIN ".FORMS." ON formid=fidref WHERE msgid=$msgid AND touid=0");
 	if ($res && icms::$xoopsDB->getRowsNum($res)) {
-	    list($fid, $s, $title) = icms::$xoopsDB->fetchRow($res);
+	    [$fid, $s, $title] = icms::$xoopsDB->fetchRow($res);
 	    $now = time();
 	    $set = "SET mtime=$now, touid=$uid, status=".icms::$xoopsDB->quoteString('a');
 	    $res = icms::$xoopsDB->query("UPDATE ".CCMES." $set WHERE msgid=$msgid");

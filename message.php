@@ -26,9 +26,9 @@ if ($uid == $data['uid'] && $now>$data['atime']) {
 
 include ICMS_ROOT_PATH."/header.php";
 
-$breadcrumbs = new XoopsBreadcrumbs(_MD_CCENTER_RECEPTION, 'reception.php');
+$breadcrumbs = new icms_view_Breadcrumb(_MD_CCENTER_RECEPTION, 'reception.php');
 
-$pass = isset($_GET['p'])?$_GET['p']:'';
+$pass = $_GET['p'] ?? '';
 $add = $pass?"p=".urlencode($pass):"";
 $to_uname = icms_member_user_Object::getUnameFromId($data['touid']);
 $res = icms::$xoopsDB->query("SELECT * FROM ".FORMS." WHERE formid=".$data['fidref']);
@@ -60,7 +60,7 @@ $xoopsTpl->assign(
 	  'status'=>$msg_status[$data['status']],
 	  'is_eval'=>is_cc_evaluate($msgid, $uid, $pass),
 	  'is_mine'=>$data['touid']==$uid,
-	  'is_getmine'=>$data['touid']==0 && $uid && in_array($data['cgroup'], icms::$user->getGroups()),
+	  'is_getmine'=>$data['touid']==0 && $uid && in_array($data['cgroup'], icms::$user->getGroups(), true),
 	  'own_status'=>array_slice($msg_status, 1, $isadmin?4:3),
 	  'xoops_pagetitle'=> htmlspecialchars(icms::$module->getVar('name')." | ".$data['title']),
 	  'has_mail'=>$has_mail,

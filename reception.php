@@ -11,13 +11,17 @@ if (!is_object(icms::$user)) {
 
 $id= isset($_GET['form'])? (int)$_GET['form'] :0;
 $isadmin = icms::$user->isAdmin(icms::$module->getVar('mid'));
-if ($isadmin) $cond = "1";
+if ($isadmin) {
+    $cond = "1";
+}
 else {
     $cond = '(priuid='.icms::$user->getVar('uid').
 	' OR cgroup IN ('.implode(',', icms::$user->getGroups()).'))';
 }
 
-if ($id) $cond .= ' AND formid='.$id;
+if ($id) {
+    $cond .= ' AND formid=' . $id;
+}
 
 $res = icms::$xoopsDB->query("SELECT f.*,count(msgid) nmsg,max(m.mtime) ltime
  FROM ".FORMS." f LEFT JOIN ".CCMES." m ON fidref=formid AND status<>".icms::$xoopsDB->quoteString(_STATUS_DEL)."

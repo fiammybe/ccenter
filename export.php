@@ -20,7 +20,7 @@ if (!icms::$user->isAdmin(icms::$module->getVar('mid'))) {
 $res = icms::$xoopsDB->query("SELECT formid,defs FROM ".FORMS." WHERE $cond");
 
 if (!$res || icms::$xoopsDB->getRowsNum($res)==0) {
-    $back = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : "index.php";
+    $back = $_SERVER['HTTP_REFERER'] ?? "index.php";
     redirect_header($back, 3, _NOPERM);
 }
 $form = icms::$xoopsDB->fetchArray($res);
@@ -66,9 +66,13 @@ $items = get_form_attribute($form['defs']);
 $labels = array('ID', _MD_POSTDATE, _CC_STATUS, _MD_CONTACT_FROM, _MD_CONTACT_TO);
 $n = $mpos = -1;
 foreach ($items as $item) {
-    if (empty($item['label'])) continue;	// skip comment
+    if (empty($item['label'])) {
+        continue;
+    }    // skip comment
     $n++;
-    if ($mpos<0 && $item['type'] == 'mail') $mpos = $n;
+    if ($mpos<0 && $item['type'] == 'mail') {
+        $mpos = $n;
+    }
     $labels[] = $item['label'];
 }
 
