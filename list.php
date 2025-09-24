@@ -25,7 +25,7 @@ $labels=array('mtime'=>_MD_POSTDATE, 'formid'=>_MD_CONTACT_FORM,
 $orders=array('mtime'=>'ASC', 'formid'=>'ASC', 'touid'=>'ASC', 'status'=>'ASC',
 	      'orders'=>array('mtime'));
 
-$listctrl = new ListCtrl('mylist', $orders);
+$listctrl = new ContactListCtrl('mylist', $orders);
 
 $cond = " AND ".$listctrl->sqlcondition();
 

@@ -10,7 +10,7 @@ $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
 
 $msgid = (int) $_GET['id'];
 
-$data = cc_get_message($msgid);
+$data = $messageHandler = new ContactMessageHandler($icms->xoopsDB);\n        $messageHandler->get($msgid);
 
 // change to accept status when change user access
 if ($uid && $uid == $data['touid'] && $data['status']==_STATUS_NONE) {

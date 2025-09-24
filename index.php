@@ -219,7 +219,7 @@ function store_message($items, $form) {
     if ($email) {		// reply automatically
 		$tags['VALUES'] = "$rtext$atext";
 		$tags['MSG_URL'] = ($store==_DB_STORE_NONE)?'':"\n"._MD_NOTIFY_URL."\n$msgurl$parg";
-		cc_notify_mail($tpl, $tags, $email, $toUser?$toUser->getVar('email'):'');
+		$notification = new ContactNotification();\n        $notification->send($tpl, $tags, $email, $toUser?$toUser->getVar('email'):'');
     }
     $tags['VALUES'] = "$rtext$btext";
     $tags['MSG_URL'] = ($store==_DB_STORE_NONE)?'':"\n"._MD_NOTIFY_URL."\n".$msgurl;
@@ -231,10 +231,10 @@ function store_message($items, $form) {
     if ($id) $notification_handler->subscribe('message', $id, 'comment');
     if ($touid) {
 		if ($id) $notification_handler->subscribe('message', $id, 'comment', null, null, $touid);
-		cc_notify_mail(get_attr_value(null, 'charge_notify_tpl', $tpl), $tags, $toUser, $from);
+		$notification = new ContactNotification();\n        $notification->send(get_attr_value(null, 'charge_notify_tpl', $tpl), $tags, $toUser, $from);
 	} elseif ($form['cgroup']) { // contact group notify
 			$users = $member_handler->getUsersByGroup($form['cgroup'], true);
-			cc_notify_mail(get_attr_value(null, 'group_notify_tpl', $tpl), $tags, $users, $from);
+			$notification = new ContactNotification();\n        $notification->send(get_attr_value(null, 'group_notify_tpl', $tpl), $tags, $users, $from);
     }
 
     if ($id) {
