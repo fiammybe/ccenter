@@ -2,8 +2,8 @@
 // contact to member
 // $Id$
 
+global $xoopsTpl;
 include "../../mainfile.php";
-include "functions.php";
 
 $errors = array();
 $op = "form";
