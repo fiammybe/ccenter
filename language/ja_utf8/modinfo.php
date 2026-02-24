@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: modinfo.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 // Module Info
 
 // The name of this module
@@ -59,3 +59,12 @@ define("_MI_SAMPLE_FORM","サンプルフォームを作成しました");
 define("_MI_SAMPLE_TITLE","お問い合わせ");
 define("_MI_SAMPLE_DESC","本サイトへのお問い合わせはこちらのフォームからどうぞ。");
 define("_MI_SAMPLE_DEFS","お名前*,size=40\nメール*,mail,size=60\n種類*,radio,掲載内容,改善要望,その他\n備考,textarea,cols=50,rows=5");
+
+// for altsys 
+if (!defined('_MD_A_MYMENU_MYTPLSADMIN')) {
+    define('_MD_A_MYMENU_MYLANGADMIN','言語定数管理');
+    define('_MD_A_MYMENU_MYTPLSADMIN','テンプレート管理');
+    define('_MD_A_MYMENU_MYBLOCKSADMIN','ブロック/アクセス管理');
+    define('_MD_A_MYMENU_MYPREFERENCES','一般設定');
+}
+?>

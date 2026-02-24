@@ -1,10 +1,10 @@
 <?php
 # show language help.html
-# $Id$
+# $Id: help.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 include '../../../include/cp_header.php';
 global $mydirpath, $mydirname;
-$mydirpath = dirname(__FILE__, 2);
+$mydirpath = dirname(dirname(__FILE__));
 $mydirname = basename($mydirpath);
 
 // for compat older PHP 4.x
@@ -47,10 +47,8 @@ function display_lang_file($file, $link='') {
 	$help = "../$lang/$file";
     }
     $content = file_get_contents($help);
-    [$h, $b] = preg_split('/<\/?body>/', $content);
-    if (empty($b)) {
-        $b =& $content;
-    }
+    list($h, $b) = preg_split('/<\/?body>/', $content);
+    if (empty($b)) $b =& $content;
     $murl = ICMS_URL.'/modules/'.icms::$module->getVar('dirname');
 
     if (preg_match('/<link[^>]*>/', $b, $match)) {
@@ -78,3 +76,5 @@ function display_lang_file($file, $link='') {
 	);
     echo '<div class="help">'.preg_replace($pat, $rep, $b).'</div>';
 }
+
+?>

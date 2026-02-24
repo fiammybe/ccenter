@@ -6,23 +6,18 @@ include_once ICMS_ROOT_PATH.'/class/pagenav.php';
 
 define('_CC_MAX_USERS', 100);	// users/page
 
-class MyPageNav extends icms_view_PageNav {
+class MyPageNav extends XoopsPageNav {
 
-    /**
-     * @var mixed|string
-     */
-    private $target;
-
-    function __construct($total, $items, $current, $name="start", $target='uid') {
-        parent::__construct($total, $items, $current, $name);
-        $this->target = $target;
+    function MyPageNav($total, $items, $current, $name="start", $target='uid') {
+	$this->XoopsPageNav($total, $items, $current, $name);
+	$this->target = $target;
     }
 
     function renderNav($offset = 4)
     {
         $ret = '';
-        $name = $this->target;
-        $fmt = '<a href="javascript:setSelectUID(\''.$name.'\',%d);">%s</a> ';
+	$name = $this->target;
+	$fmt = '<a href="javascript:setSelectUID(\''.$name.'\',%d);">%s</a> ';
         if ( $this->total <= $this->perpage ) {
             return $ret;
         }
@@ -33,7 +28,7 @@ class MyPageNav extends icms_view_PageNav {
                 $ret .= sprintf($fmt, $prev, '<u>&laquo;</u>');
             }
             $counter = 1;
-            $current_page = (int)floor(($this->current + $this->perpage) / $this->perpage);
+            $current_page = intval(floor(($this->current + $this->perpage) / $this->perpage));
             while ( $counter <= $total_pages ) {
                 if ( $counter == $current_page ) {
                     $ret .= '<b>('.$counter.')</b> ';
@@ -63,14 +58,15 @@ function cc_group_users($group=0, $max=_CC_MAX_USERS, $start=0, $count=false) {
     if (!empty($_REQUEST['s'])) $cond .= ' AND uname LIKE '.icms::$xoopsDB->quoteString($_REQUEST['s'].'%');
     $sql0 = "FROM ".icms::$xoopsDB->prefix("groups_users_link")." l, ".icms::$xoopsDB->prefix("users")." u WHERE l.uid=u.uid".$cond;
     if ($count) {
-        $res = icms::$xoopsDB->query("SELECT DISTINCT u.uid $sql0");
-        $total = icms::$xoopsDB->getRowsNum($res);
-        return $total;
+	$res = icms::$xoopsDB->query("SELECT DISTINCT u.uid $sql0");
+	$total = icms::$xoopsDB->getRowsNum($res);
+	return $total;
     }
     $res = icms::$xoopsDB->query("SELECT u.uid, uname $sql0 GROUP BY u.uid ORDER BY uname", $max, $start);
     $options = array();
     while (list($uid, $uname) = icms::$xoopsDB->fetchRow($res)) {
-        $options[$uid] = htmlspecialchars($uname);
+	$options[$uid] = htmlspecialchars($uname);
     }
     return $options;
 }
+?>

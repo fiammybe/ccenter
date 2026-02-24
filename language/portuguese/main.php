@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: main.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 // Traduzido para o Portugues do Brasil por: Miraldo Antoninho Ohse (m_ohse@hotmail.com).
 
 define('_MD_EVALS','Avaliação');

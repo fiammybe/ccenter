@@ -1,10 +1,14 @@
-This is an automatic reply message.
+This is auto reply message.
 {REPLY_COMMENT}
-We received the following question. Please hold on, we will reply to you shortly.
+We received following contact message.
+
+Please wait reply again form us.
 
 -------
-{VALUES}
--------
+{VALUES}-------
+Sender
+IP address: {REMOTE_ADDR}
+Browser: {HTTP_USER_AGENT}
 {MSG_URL}
 
 -- 

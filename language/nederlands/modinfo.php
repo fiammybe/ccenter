@@ -1,60 +1,69 @@
 <?php
-// Module Informatie
+// $Id: modinfo.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
+// Module Info
 
-// De naam van de module
+// The name of this module
 define("_MI_CCENTER_NAME","Contact Center");
 
 // A brief description of this module
-define("_MI_CCENTER_DESC","Contact formulier met opslag en beheer van de antwoorden");
+define("_MI_CCENTER_DESC","Contact form with message store and management");
 
 // Sub Menu
-define("_MI_CCENTER_MYCONTACT", "Mijn boodschappen");
-define("_MI_CCENTER_MYCHARGE", "Mijn taken");
-define("_MI_CCENTER_STAFFDESK", "Dashboard");
+define("_MI_CCENTER_MYCONTACT", "My Messages");
+define("_MI_CCENTER_MYCHARGE", "Contact for me");
+define("_MI_CCENTER_STAFFDESK", "Staff Desk");
 
 // Admin Menu
-define("_MI_CCENTER_FORMADMIN", "Formulieren");
-define("_MI_CCENTER_MSGADMIN", "Boodschappen");
-define("_MI_CCENTER_HELP", "Over ccenter");
+define("_MI_CCENTER_FORMADMIN", "Forms");
+define("_MI_CCENTER_MSGADMIN", "Messages");
+define("_MI_CCENTER_HELP", "About ccenter");
 
 // A brief template of this module
-define("_MI_CCENTER_INDEX_TPL", "Lijst van formulieren");
-define("_MI_CCENTER_FORM_TPL", "Contact formulier");
-define("_MI_CCENTER_CUST_TPL", "Contact formulier (aangepast)");
-define("_MI_CCENTER_CONF_TPL", "Bevestig formulier ingave");
-define("_MI_CCENTER_LIST_TPL", "Lijst van mijn vragen");
-define("_MI_CCENTER_CHARGE_TPL", "Lijst van mijn taken");
-define("_MI_CCENTER_MSGS_TPL", "Toon contact boodschap");
-define("_MI_CCENTER_RECEPT_TPL", "Team Dashboard");
-define("_MI_CCENTER_WIDGET_TPL", "Formulier widgets");
+define("_MI_CCENTER_INDEX_TPL", "List of forms");
+define("_MI_CCENTER_FORM_TPL", "Contact form");
+define("_MI_CCENTER_CUST_TPL", "Contact form (custom)");
+define("_MI_CCENTER_CONF_TPL", "Confirm form inputs");
+define("_MI_CCENTER_LIST_TPL", "List of my queries");
+define("_MI_CCENTER_CHARGE_TPL", "List of contact for me");
+define("_MI_CCENTER_MSGS_TPL", "Display contact message");
+define("_MI_CCENTER_RECEPT_TPL", "Display staff desk");
+define("_MI_CCENTER_WIDGET_TPL", "Form widgets");
 
 // A brief blocks of this module
-define("_MI_CCENTER_BLOCK_RECEIPT","Mijn taken");
-define("_MI_CCENTER_BLOCK_FORM","Contact formulier");
+define("_MI_CCENTER_BLOCK_RECEIPT","Contact for me");
+define("_MI_CCENTER_BLOCK_FORM","Contact form");
 
 // Configs
-define("_MI_CCENTER_LISTS","Aantal lijst items");
-define("_MI_CCENTER_LISTS_DESC","Het aantal lijst items om te tonen");
-define("_MI_CCENTER_DEF_ATTRS","Standaard opties");
+define("_MI_CCENTER_LISTS","Number of list items");
+define("_MI_CCENTER_LISTS_DESC","Set number of list show a display");
+define("_MI_CCENTER_DEF_ATTRS","Default options");
 define("_MI_CCENTER_DEF_ATTRS_DESC","Setting form definition and other attribute <a href='help.php#attr'>default options</a>. Example: <tt>size=60,rows=5,cols=50</tt>");
-define("_MI_CCENTER_STATUS_COMBO", "Statussen");
-define("_MI_CCENTER_STATUS_COMBO_DESC","Het formaat: <tt>Display-label: [status1[,status2...]]</tt>, kan meerdere lijnen bevatten. De status is een letter van (-,a,b,c). Voorbeeld: <tt>Open: - a</tt>");
-define("_MI_CCENTER_STATUS_COMBO_DEF","Alles: - a b c\nOpen: - a\nGesloten: b c\n--------:\nWachten: -\nWorking: a\nBeantwoord: b\nKlaar: c\n");
+define("_MI_CCENTER_STATUS_COMBO", "Status selections");
+define("_MI_CCENTER_STATUS_COMBO_DESC","the Format as: <tt>Display-label: [status1[,status2...]]</tt>, include multipule lines. the status is a character from (-,a,b,c). Example: <tt>Open: - a</tt>");
+define("_MI_CCENTER_STATUS_COMBO_DEF","All: - a b c\nOpen: - a\nClosed: b c\n--------:\nWaiting: -\nWorking: a\nReplyed: b\nDone: c\n");
 
 // Notifications
-define("_MI_CCENTER_GLOBAL_NOTIFY","Alle formulieren");
-define("_MI_CCENTER_FORM_NOTIFY","Dit formulier");
-define("_MI_CCENTER_MESSAGE_NOTIFY","Deze boodschap");
+define("_MI_CCENTER_GLOBAL_NOTIFY","All forms");
+define("_MI_CCENTER_FORM_NOTIFY","This form");
+define("_MI_CCENTER_MESSAGE_NOTIFY","This Message");
 
-define("_MI_CCENTER_NEWPOST_NOTIFY","Contact boodschap");
+define("_MI_CCENTER_NEWPOST_NOTIFY","Contact Message");
 define("_MI_CCENTER_NEWPOST_NOTIFY_CAP","Notify contact message");
-define("_MI_CCENTER_NEWPOST_SUBJECT","Verstuur bericht");
+define("_MI_CCENTER_NEWPOST_SUBJECT","Post contact message");
 
 define("_MI_CCENTER_STATUS_NOTIFY","Update status");
 define("_MI_CCENTER_STATUS_NOTIFY_CAP","Notify status changes");
 define("_MI_CCENTER_STATUS_SUBJECT","Status:[{X_MODULE}]{FORM_NAME}");
 
-define("_MI_SAMPLE_FORM","Maak voorbeeldformulier");
-define("_MI_SAMPLE_TITLE","Contacteer ons");
-define("_MI_SAMPLE_DESC","Gebruik dit formulier om ons te contacteren.");
-define("_MI_SAMPLE_DEFS","Uw naam*,size=40\nEmail*,mail,size=60\nOnderwerp*,radio,Site inhoud,Vraag over ons,Andere\nMessage,textarea,cols=50,rows=5");
+define("_MI_SAMPLE_FORM","Create sample form");
+define("_MI_SAMPLE_TITLE","Contact us");
+define("_MI_SAMPLE_DESC","Please send following form when you want contact us.");
+define("_MI_SAMPLE_DEFS","Your name*,size=40\nEmail*,mail,size=60\nAbout*,radio,Site contents,Query about us,Others\nMessage,textarea,cols=50,rows=5");
+
+// for altsys 
+if (!defined('_MD_A_MYMENU_MYTPLSADMIN')) {
+    define('_MD_A_MYMENU_MYTPLSADMIN','Templates');
+    define('_MD_A_MYMENU_MYBLOCKSADMIN','Block/Access');
+    define('_MD_A_MYMENU_MYPREFERENCES','Prefercenes');
+}
+?>

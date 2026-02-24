@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: notification.inc.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //
@@ -30,17 +30,18 @@ function ccenter_notify_iteminfo($category, $item_id)
 {
 
     $item = array('name'=>'','url'=>'');
-    $dirname = basename(__DIR__);
-    if ($category==='message' && $item_id!=0) {
+    $dirname = basename(dirname(__FILE__));
+    if ($category=='message' && $item_id!=0) {
 	// Assume we have a valid story id
 	$sql = "SELECT fidref, touid, title FROM ".
 	    icms::$xoopsDB->prefix('ccenter_message').','.
 	    icms::$xoopsDB->prefix('ccenter_form').
 	    " WHERE status<>'x' AND msgid=$item_id AND fidref=formid";
 	$result = icms::$xoopsDB->query($sql); // TODO: error check
-	[$fid, $touid, $title] = icms::$xoopsDB->fetchRow($result);
+	list($fid, $touid, $title) = icms::$xoopsDB->fetchRow($result);
 	$item['name'] = $title;
 	$item['url'] = ICMS_URL."/modules/$dirname/message.php?id=".$item_id;
     }
     return $item;
 }
+?>

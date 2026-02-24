@@ -1,6 +1,6 @@
 <?php
 # ccenter module onUpdate proceeding.
-# $Id$
+# $Id: onupdate.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 
 // ccenter_log table add in 0.72 later
@@ -70,3 +70,4 @@ function report_message($msg) {
     }
     $msgs[] = "&nbsp;&nbsp; $msg";
 }
+?>

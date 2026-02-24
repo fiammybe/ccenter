@@ -12,7 +12,7 @@
  * 				ccenter
  * @since		1.00
  * @author		QM-B <qm-b@hotmail.de>
- * @version		$Id$
+ * @version		$Id: about.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
  * @package		ccenter
  *
  */

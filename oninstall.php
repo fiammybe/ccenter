@@ -1,6 +1,6 @@
 <?php
 # ccenter module onInstall proceeding.
-# $Id$
+# $Id: oninstall.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 register_shutdown_function('ccenter_sample_form');
 
@@ -17,6 +17,7 @@ function ccenter_sample_form()
 		  'defs'=>icms::$xoopsDB->quoteString(_MI_SAMPLE_DEFS),
 		  'priuid'=>icms::$user->getVar('uid'));
 
-    icms::$xoopsDB->query('INSERT INTO '.FORM."(".implode(',', array_keys($data)).")VALUES(".implode(',', $data).")");
+    icms::$xoopsDB->query('INSERT INTO '.FORM."(".join(',', array_keys($data)).")VALUES(".join(',', $data).")");
     $msgs[] = '&nbsp;&nbsp;<b>'._MI_SAMPLE_FORM."</b>";
 }
+?>

@@ -1,6 +1,6 @@
 <?php
 // show message list
-// $Id$
+// $Id: charge.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 include "../../mainfile.php";
 include "functions.php";

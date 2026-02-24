@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: menu.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 $adminmenu[]=array('title' => _MI_CCENTER_HELP,
 		   'link'  => "admin/help.php");
@@ -8,7 +8,7 @@ $adminmenu[]=array('title' => _MI_CCENTER_FORMADMIN,
 $adminmenu[]=array('title' => _MI_CCENTER_MSGADMIN,
 		    'link' => "admin/msgadm.php");
 
-$moddir = basename(dirname(__FILE__, 2));
+$moddir = basename(dirname(dirname(__FILE__)));
 $module = icms::handler("icms_module")->getByDirname($moddir);
 
 $headermenu[] = array(

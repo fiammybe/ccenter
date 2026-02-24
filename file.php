@@ -1,6 +1,6 @@
 <?php
 // show attachment file
-// $Id$
+// $Id: file.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 include "../../mainfile.php";
 include "functions.php";
@@ -11,7 +11,7 @@ if (!function_exists('mime_content_type')) {
     }
 }
 
-$msgid = isset($_GET['id'])? (int)$_GET['id'] :0;
+$msgid = isset($_GET['id'])?intval($_GET['id']):0;
 $file = $_GET['file'];
 
 if ($msgid) {
@@ -35,3 +35,4 @@ if ($_SERVER["REQUEST_METHOD"]=="GET") {
     header('Content-Disposition: inline;filename="'.$file.'"');
     print file_get_contents($path);
 }
+?>

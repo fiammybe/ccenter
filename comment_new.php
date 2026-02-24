@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: comment_new.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 //  ------------------------------------------------------------------------ //
 //                ICMS - PHP Content Management System                      //
 //                    Copyright (c) 2000 ICMS.org                           //

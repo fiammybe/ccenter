@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: blocks.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 define("_BL_CCENTER_OPT_LINES", "Lines");
 define("_BL_CCENTER_OPT_SORT", "Order");

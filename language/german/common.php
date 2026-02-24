@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: common.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 // common user and admin
 
 // message status

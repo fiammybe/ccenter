@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: modinfo.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 // Module Info
 
 // The name of this module
@@ -59,3 +59,11 @@ define("_MI_SAMPLE_FORM","Create sample form");
 define("_MI_SAMPLE_TITLE","Contact us");
 define("_MI_SAMPLE_DESC","Please send following form when you want contact us.");
 define("_MI_SAMPLE_DEFS","Your name*,size=40\nEmail*,mail,size=60\nAbout*,radio,Site contents,Query about us,Others\nMessage,textarea,cols=50,rows=5");
+
+// for altsys 
+if (!defined('_MD_A_MYMENU_MYTPLSADMIN')) {
+    define('_MD_A_MYMENU_MYTPLSADMIN','Templates');
+    define('_MD_A_MYMENU_MYBLOCKSADMIN','Block/Access');
+    define('_MD_A_MYMENU_MYPREFERENCES','Prefercenes');
+}
+?>

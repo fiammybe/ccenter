@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: main.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 define('_MD_EVALS','評価');
 define('_MD_COUNT','件数');
