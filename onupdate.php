@@ -48,8 +48,6 @@ if ($res && preg_replace('/^varchar\((\d+)\)$/', '\1', $data['Type'])<256) {
     }
 }
 
-migrate_form_defs_to_json();
-
 function add_field($table, $field, $type, $after) {
 
     $res = icms::$xoopsDB->query("SELECT $field FROM $table", 1);
@@ -108,4 +106,6 @@ function migrate_form_defs_to_json()
         report_message(" Migrated <b>$migrated</b> legacy form definition(s) to JSON");
     }
 }
+
+migrate_form_defs_to_json();
 ?>

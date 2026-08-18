@@ -414,7 +414,7 @@ function cc_parse_json_form_attribute($defs, $labels = "", $prefix = "cc")
 		$default = isset($field["default"]) ? $field["default"] : "";
 		if ($type == "checkbox") {
 			if (is_array($default)) {
-				$default = $default;
+				$default = array_map("strval", $default);
 			} elseif ($default === "" && !empty($defaults)) {
 				$default = $defaults;
 			} elseif ($default === "") {
@@ -523,7 +523,7 @@ function cc_convert_json_defs_to_legacy($defs)
 	$lines = [];
 	foreach ($items as $item) {
 		if (empty($item["name"])) {
-			$lines[] = "#" . $item["comment"];
+			$lines[] = "#" . (isset($item["comment"]) ? $item["comment"] : "");
 			continue;
 		}
 		$name = $item["name"];
@@ -920,7 +920,7 @@ function cc_make_widget($item, $vars = null)
 			$fname .
 			"_etc' value='" .
 			htmlspecialchars(isset($item["etc_value"]) ? $item["etc_value"] : "", ENT_QUOTES) .
-			"' onChange=\"checkedEtcText('" .
+			"' onchange=\"checkedEtcText('" .
 			$fname .
 			"')\"$extra />";
 	}
@@ -930,7 +930,9 @@ function cc_make_widget($item, $vars = null)
 			$v .
 			"<input name='" .
 			$fname .
-			"_prev' type='hidden' value='$v' />";
+			"_prev' type='hidden' value='" .
+			$v .
+			"' />";
 	}
 	return $html;
 }
@@ -1707,13 +1709,12 @@ function cc_render_default_form_html($form, $op)
 	$op_value = $op == "confirm" ? "store" : "confirm";
 	$html = "";
 	$html .= '<div class="evform">';
-	$html .= "<h2>" . $form["title"] . "</h2>";
+	$html .= "<h2>" . htmlspecialchars($form["title"], ENT_QUOTES) . "</h2>";
 	$html .= isset($form["desc"]) ? $form["desc"] : "";
-	$html .= '<a name="form"></a>';
 	$html .=
 		"<form action=\"" .
 		$action .
-		"\" name=\"ccenter\" class=\"ccform\" method=\"" .
+		"\" id=\"form\" name=\"ccenter\" class=\"ccform\" method=\"" .
 		$method .
 		"\"$attrs>";
 	$html .=
@@ -1723,19 +1724,28 @@ function cc_render_default_form_html($form, $op)
 	$html .=
 		'<table class="outer" align="center" cellspacing="1" border="0" summary="Contact form items">';
 	$html .= '<col style="width: 20%;"/>';
+	$n = 0;
 	foreach ($form["items"] as $item) {
 		if (empty($item["field"])) {
 			$comment = isset($item["comment"]) ? $item["comment"] : "";
 			if ($comment !== "") {
-				$html .= "<tr><td colspan='2'>" . $comment . "</td></tr>";
+				$html .=
+					"<tr><td colspan='2'>" .
+					htmlspecialchars($comment, ENT_QUOTES) .
+					"</td></tr>";
 			}
 			continue;
 		}
 		$require = !empty($item["attr"]["check"]) ? " require" : "";
-		$label = isset($item["label"]) ? $item["label"] : "";
+		$label = isset($item["label"])
+			? htmlspecialchars($item["label"], ENT_QUOTES)
+			: "";
 		$input = isset($item["input"]) ? $item["input"] : "";
-		$comment = isset($item["comment"]) ? $item["comment"] : "";
-		$html .= "<tr class='even$require'>";
+		$comment = isset($item["comment"])
+			? htmlspecialchars($item["comment"], ENT_QUOTES)
+			: "";
+		$rowclass = $n++ % 2 ? "odd" : "even";
+		$html .= "<tr class='$rowclass$require'>";
 		if ($label) {
 			$html .= "<td class='head'>$label</td><td>$input";
 		} else {
