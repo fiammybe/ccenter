@@ -2,6 +2,8 @@
 // ccenter common functions
 // $Id: functions.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
+require_once dirname(__FILE__) . "/class/FormDefinition.php";
+
 // using tables
 define("FORMS", icms::$xoopsDB->prefix("ccenter_form"));
 define("CCMES", icms::$xoopsDB->prefix("ccenter_message"));
@@ -182,393 +184,42 @@ function cc_csv_parse($ln)
 
 function cc_form_definition_schema()
 {
-	return [
-		"format" => "ccenter.form.v1",
-		"version" => 1,
-		"fields" => [],
-	];
+	return mod_ccenter_FormDefinition::schema();
 }
 
 function cc_is_json_form_definition($defs)
 {
-	if (!is_string($defs)) {
-		return false;
-	}
-	$defs = trim($defs);
-	if ($defs === "" || !preg_match('/^[\[\{]/', $defs)) {
-		return false;
-	}
-	$data = json_decode($defs, true);
-	if (!is_array($data)) {
-		return false;
-	}
-	if (isset($data["fields"]) && is_array($data["fields"])) {
-		return true;
-	}
-	$i = 0;
-	foreach (array_keys($data) as $k) {
-		if ($k !== $i++) {
-			return false;
-		}
-	}
-	return true;
+	return mod_ccenter_FormDefinition::isJsonDefinition($defs);
 }
 
 function cc_parse_legacy_form_attribute($defs, $labels = "", $prefix = "cc")
 {
-	$labs = unserialize_vars($labels);
-	$num = 0;
-	$result = [];
-	$types = [
-		"text",
-		"checkbox",
-		"radio",
-		"textarea",
-		"select",
-		"hidden",
-		"const",
-		"mail",
-		"file",
-		"date",
-	];
-	foreach (cc_csv_parse($defs) as $opts) {
-		if (empty($opts)) {
-			continue;
-		}
-		if (preg_match("/^#/", $opts[0])) {
-			$result[] = ["comment" => substr(join(",", $opts), 1)];
-			continue;
-		}
-		$name = array_shift($opts);
-		if (preg_match('/=(.*)$/', $name, $d)) {
-			$label = $d[1];
-			$name = preg_replace('/=(.*)$/', "", $name);
-		} else {
-			$label = isset($labs[$name]) ? $labs[$name] : $name;
-		}
-		$type = "text";
-		$comment = "";
-		$attr = [];
-		if (count($opts) && in_array($opts[0], $types)) {
-			$type = array_shift($opts);
-		}
-		if (preg_match('/\*$/', $name)) {
-			$attr["check"] = "require";
-			$name = preg_replace('/\s*\*$/', "", $name);
-			if (defined("_MD_REQUIRE_MARK")) {
-				$label = preg_replace('/\s*\*$/', _MD_REQUIRE_MARK, $label);
-			}
-		}
-		while (
-			isset($opts[0]) &&
-			(preg_match(
-				'/^(size|rows|maxlength|cols|prop)=(\d+)$/',
-				$opts[0],
-				$d,
-			) ||
-				preg_match('/^(check)=(.+)$/', $opts[0], $d))
-		) {
-			array_shift($opts);
-			$attr[$d[1]] = $d[2];
-		}
-		$options = [];
-		$defs = [];
-		if (count($opts)) {
-			while (count($opts) && !preg_match("/^\s*#/", $opts[0])) {
-				$v = array_shift($opts);
-				$sv = preg_split("/=/", $v, 2);
-				if (count($sv) > 1) {
-					$k = strip_tags($sv[0]);
-					$sk = preg_replace('/\+$/', "", $k);
-					if ($k != $sk) {
-						$defs[] = $sk;
-					}
-					$options[$sk] = $sv[1];
-				} else {
-					$k = strip_tags($v);
-					$sk = preg_replace('/\+$/', "", $k);
-					if ($k != $sk) {
-						$defs[] = $sk;
-					}
-					$options[$sk] = preg_replace('/\+$/', "", $v);
-				}
-			}
-			if (count($opts)) {
-				$opts[0] = preg_replace("/^\s*#/", "", $opts[0]);
-				$comment = join(",", $opts);
-			}
-		}
-		if ($type == "radio") {
-			$defs = $defs ? $defs[0] : "";
-		} elseif ($type != "checkbox") {
-			$defs = eval_user_value(join(",", $options));
-		}
-		if ($type == "date") {
-			if (empty($defs)) {
-				$defs = formatTimestamp(time(), "Y-m-d");
-			}
-		} elseif ($type == "textarea") {
-			$attr["rows"] = get_attr_value($attr, "rows");
-			$attr["cols"] = get_attr_value($attr, "cols");
-		} else {
-			$attr["size"] = get_attr_value($attr, "size");
-		}
-
-		$fname = $prefix . ++$num;
-		$result[$name] = [
-			"name" => $name,
-			"label" => $label,
-			"field" => $fname,
-			"options" => $options,
-			"type" => $type,
-			"comment" => $comment,
-			"attr" => $attr,
-			"default" => $defs,
-		];
-	}
-	return $result;
+	return mod_ccenter_FormDefinition::parseLegacy($defs, $labels, $prefix);
 }
 
 function cc_parse_json_form_attribute($defs, $labels = "", $prefix = "cc")
 {
-	$labs = unserialize_vars($labels);
-	$data = json_decode(trim($defs), true);
-	if (!is_array($data)) {
-		return cc_parse_legacy_form_attribute($defs, $labels, $prefix);
-	}
-	$fields = isset($data["fields"]) && is_array($data["fields"]) ? $data["fields"] : $data;
-	$types = [
-		"text",
-		"checkbox",
-		"radio",
-		"textarea",
-		"select",
-		"hidden",
-		"const",
-		"mail",
-		"file",
-		"date",
-	];
-	$num = 0;
-	$result = [];
-	foreach ($fields as $field) {
-		if (!is_array($field)) {
-			continue;
-		}
-		if (isset($field["comment_only"]) && $field["comment_only"]) {
-			$result[] = ["comment" => (string) $field["comment"]];
-			continue;
-		}
-		$name = isset($field["name"]) ? trim($field["name"]) : "";
-		if ($name === "") {
-			continue;
-		}
-		$type = isset($field["type"]) ? strtolower(trim($field["type"])) : "text";
-		if (!in_array($type, $types)) {
-			$type = "text";
-		}
-		$label = isset($field["label"]) && $field["label"] !== ""
-			? $field["label"]
-			: (isset($labs[$name]) ? $labs[$name] : $name);
-		$attr = [];
-		if (isset($field["attributes"]) && is_array($field["attributes"])) {
-			foreach ($field["attributes"] as $k => $v) {
-				if (in_array($k, ["size", "rows", "maxlength", "cols", "prop"])) {
-					$attr[$k] = $v;
-				}
-			}
-		}
-		if (!empty($field["required"])) {
-			$attr["check"] = "require";
-		}
-		if (!empty($field["validation"])) {
-			$attr["check"] = $field["validation"];
-		}
-		if ($type == "textarea") {
-			$attr["rows"] = get_attr_value($attr, "rows");
-			$attr["cols"] = get_attr_value($attr, "cols");
-		} else {
-			$attr["size"] = get_attr_value($attr, "size");
-		}
-
-		$options = [];
-		$defaults = [];
-		if (isset($field["options"])) {
-			if (is_array($field["options"])) {
-				$i = 0;
-				foreach ($field["options"] as $ok => $ov) {
-					if (is_array($ov)) {
-						$oval = isset($ov["value"]) ? (string) $ov["value"] : (string) $ok;
-						$olab = isset($ov["label"]) ? $ov["label"] : $oval;
-						if (!empty($ov["default"])) {
-							$defaults[] = $oval;
-						}
-					} else {
-						$oval = ((string) $ok === (string) $i++) ? (string) $ov : (string) $ok;
-						$olab = (string) $ov;
-					}
-					$options[$oval] = $olab;
-				}
-			}
-		}
-		$default = isset($field["default"]) ? $field["default"] : "";
-		if ($type == "checkbox") {
-			if (is_array($default)) {
-				$default = array_map("strval", $default);
-			} elseif ($default === "" && !empty($defaults)) {
-				$default = $defaults;
-			} elseif ($default === "") {
-				$default = [];
-			} else {
-				$default = [(string) $default];
-			}
-		} elseif ($type == "radio") {
-			if ($default === "" && !empty($defaults)) {
-				$default = $defaults[0];
-			}
-		} elseif ($default === "" && ($type == "hidden" || $type == "const")) {
-			$default = eval_user_value(join(",", $options));
-		}
-		if ($type == "date" && empty($default)) {
-			$default = formatTimestamp(time(), "Y-m-d");
-		}
-		$fname = $prefix . ++$num;
-		$result[$name] = [
-			"name" => $name,
-			"label" => $label,
-			"field" => $fname,
-			"options" => $options,
-			"type" => $type,
-			"comment" => isset($field["comment"]) ? $field["comment"] : "",
-			"attr" => $attr,
-			"default" => $default,
-		];
-	}
-	return $result;
+	return mod_ccenter_FormDefinition::parseJson($defs, $labels, $prefix);
 }
 
 function cc_convert_items_to_json_defs($items)
 {
-	$schema = cc_form_definition_schema();
-	$schema["fields"] = [];
-	foreach ($items as $item) {
-		if (empty($item["name"])) {
-			if (!empty($item["comment"])) {
-				$schema["fields"][] = [
-					"comment_only" => true,
-					"comment" => $item["comment"],
-				];
-			}
-			continue;
-		}
-		$field = [
-			"name" => $item["name"],
-			"label" => $item["label"],
-			"type" => $item["type"],
-		];
-		$attr = isset($item["attr"]) && is_array($item["attr"]) ? $item["attr"] : [];
-		if (!empty($attr["check"])) {
-			if ($attr["check"] == "require") {
-				$field["required"] = true;
-			} else {
-				$field["validation"] = $attr["check"];
-			}
-		}
-		$attrs = [];
-		foreach (["size", "rows", "maxlength", "cols", "prop"] as $ak) {
-			if (isset($attr[$ak]) && $attr[$ak] !== "") {
-				$attrs[$ak] = $attr[$ak];
-			}
-		}
-		if (!empty($attrs)) {
-			$field["attributes"] = $attrs;
-		}
-		if (!empty($item["options"])) {
-			$field["options"] = [];
-			$default = isset($item["default"]) ? $item["default"] : "";
-			foreach ($item["options"] as $ok => $ov) {
-				$opt = ["value" => (string) $ok, "label" => $ov];
-				if (is_array($default) && in_array($ok, $default)) {
-					$opt["default"] = true;
-				} elseif (!is_array($default) && (string) $default === (string) $ok) {
-					$opt["default"] = true;
-				}
-				$field["options"][] = $opt;
-			}
-		}
-		if (array_key_exists("default", $item)) {
-			$field["default"] = $item["default"];
-		}
-		if (!empty($item["comment"])) {
-			$field["comment"] = $item["comment"];
-		}
-		$schema["fields"][] = $field;
-	}
-	return json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+	return mod_ccenter_FormDefinition::itemsToJson($items);
 }
 
 function cc_defs_to_json($defs, $labels = "", $prefix = "cc")
 {
-	if (cc_is_json_form_definition($defs)) {
-		$items = cc_parse_json_form_attribute($defs, $labels, $prefix);
-	} else {
-		$items = cc_parse_legacy_form_attribute($defs, $labels, $prefix);
-	}
-	return cc_convert_items_to_json_defs($items);
+	return (new mod_ccenter_FormDefinition($defs, $labels, $prefix))->toJson();
 }
 
 function cc_convert_json_defs_to_legacy($defs)
 {
-	$items = cc_parse_json_form_attribute($defs);
-	$lines = [];
-	foreach ($items as $item) {
-		if (empty($item["name"])) {
-			$lines[] = "#" . (isset($item["comment"]) ? $item["comment"] : "");
-			continue;
-		}
-		$name = $item["name"];
-		$attr = isset($item["attr"]) ? $item["attr"] : [];
-		if (!empty($attr["check"]) && $attr["check"] == "require") {
-			$name .= "*";
-		}
-		$line = [$name];
-		if (!empty($item["type"]) && $item["type"] != "text") {
-			$line[] = $item["type"];
-		}
-		foreach (["size", "rows", "maxlength", "cols", "prop"] as $ak) {
-			if (isset($attr[$ak]) && $attr[$ak] !== "") {
-				$line[] = $ak . "=" . $attr[$ak];
-			}
-		}
-		if (!empty($attr["check"]) && $attr["check"] != "require") {
-			$line[] = "check=" . $attr["check"];
-		}
-		if (!empty($item["options"])) {
-			$default = isset($item["default"]) ? $item["default"] : "";
-			foreach ($item["options"] as $ok => $ov) {
-				$key = $ok;
-				if (is_array($default) && in_array($ok, $default)) {
-					$key .= "+";
-				} elseif (!is_array($default) && (string) $default === (string) $ok) {
-					$key .= "+";
-				}
-				$line[] = $key . "=" . $ov;
-			}
-		}
-		if (!empty($item["comment"])) {
-			$line[] = "#" . $item["comment"];
-		}
-		$lines[] = join(",", $line);
-	}
-	return join("\n", $lines);
+	return (new mod_ccenter_FormDefinition($defs))->toLegacy();
 }
 
 function get_form_attribute($defs, $labels = "", $prefix = "cc")
 {
-	if (cc_is_json_form_definition($defs)) {
-		return cc_parse_json_form_attribute($defs, $labels, $prefix);
-	}
-	return cc_parse_legacy_form_attribute($defs, $labels, $prefix);
+	return (new mod_ccenter_FormDefinition($defs, $labels, $prefix))->getFields();
 }
 
 function assign_post_values(&$items)
