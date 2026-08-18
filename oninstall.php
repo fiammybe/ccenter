@@ -3,6 +3,7 @@
 # $Id: oninstall.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 register_shutdown_function('ccenter_sample_form');
+include_once dirname(__FILE__) . '/functions.php';
 
 function ccenter_sample_form()
 {
@@ -14,7 +15,7 @@ function ccenter_sample_form()
 		  'title'=>icms::$xoopsDB->quoteString(_MI_SAMPLE_TITLE),
 		  'description'=>icms::$xoopsDB->quoteString(_MI_SAMPLE_DESC),
 		  'grpperm'=>"'|".ICMS_GROUP_ANONYMOUS."|".ICMS_GROUP_USERS."|'",
-		  'defs'=>icms::$xoopsDB->quoteString(_MI_SAMPLE_DEFS),
+		  'defs'=>icms::$xoopsDB->quoteString(cc_defs_to_json(_MI_SAMPLE_DEFS)),
 		  'priuid'=>icms::$user->getVar('uid'));
 
     icms::$xoopsDB->query('INSERT INTO '.FORM."(".join(',', array_keys($data)).")VALUES(".join(',', $data).")");
