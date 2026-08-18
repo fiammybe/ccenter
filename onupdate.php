@@ -7,6 +7,7 @@
 define('LOG', icms::$xoopsDB->prefix('ccenter_log'));
 define('MSG', icms::$xoopsDB->prefix('ccenter_message'));
 define('FORM', icms::$xoopsDB->prefix('ccenter_form'));
+include_once dirname(__FILE__) . '/functions.php';
 
 // add logging (after ccenter-0.80)
 icms::$xoopsDB->query('SELECT * FROM '.LOG, 1);
@@ -70,4 +71,41 @@ function report_message($msg) {
     }
     $msgs[] = "&nbsp;&nbsp; $msg";
 }
+
+function migrate_form_defs_to_json()
+{
+    $res = icms::$xoopsDB->query('SELECT formid,defs FROM ' . FORM);
+    if (!$res) {
+        return;
+    }
+    $migrated = 0;
+    while ($row = icms::$xoopsDB->fetchArray($res)) {
+        $defs = isset($row['defs']) ? $row['defs'] : '';
+        if ($defs === '' || cc_is_json_form_definition($defs)) {
+            continue;
+        }
+        $json = cc_defs_to_json($defs);
+        if (!$json) {
+            continue;
+        }
+        $ok = icms::$xoopsDB->queryF(
+            'UPDATE ' .
+                FORM .
+                ' SET defs=' .
+                icms::$xoopsDB->quoteString($json) .
+                ' WHERE formid=' .
+                (int) $row['formid'] .
+                ' AND defs=' .
+                icms::$xoopsDB->quoteString($defs),
+        );
+        if ($ok) {
+            $migrated++;
+        }
+    }
+    if ($migrated) {
+        report_message(" Migrated <b>$migrated</b> legacy form definition(s) to JSON");
+    }
+}
+
+migrate_form_defs_to_json();
 ?>

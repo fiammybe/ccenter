@@ -58,6 +58,9 @@ if ($op == "delform") {
         $data[$fname] = $v = icms_core_DataFilter::stripSlashesGPC(
             $_POST[$fname],
         );
+        if ($fname == "defs") {
+            $data[$fname] = $v = cc_defs_to_json($v);
+        }
         $v = icms::$db->quoteString($v);
         if ($formid) {
             $vals[] = $fname . "=" . $v;
@@ -332,6 +335,9 @@ function build_form($formid = 0)
             "SELECT * FROM " . FORMS . " WHERE formid=$formid",
         );
         $data = icms::$db->fetchArray($res);
+        if (cc_is_json_form_definition($data["defs"])) {
+            $data["defs"] = cc_convert_json_defs_to_legacy($data["defs"]);
+        }
         $data["grpperm"] = explode("|", trim($data["grpperm"], "|"));
     } else {
         $data = [
