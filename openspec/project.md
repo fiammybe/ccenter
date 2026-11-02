@@ -15,7 +15,7 @@ accept, reply to, evaluate and close submissions.
 ## Project Conventions
 
 ### Code Style
-- PSR-12 formatting, `declare(strict_types=1)` in new class files.
+- PSR-12 formatting. `declare(strict_types=1)` is NOT used (core and IPF rely on loose scalar coercion); use parameter/return types without strict mode.
 - Classes live in `class/` and follow the ImpressCMS module convention
   `mod_ccenter_<Name>` / `mod_ccenter_<Name>Handler`, file `class/<Name>.php` and `class/<Name>Handler.php`.
 - Language constants: `_MI_CCENTER_*` (modinfo), `_AM_CCENTER_*` (admin), `_MD_CCENTER_*` (main), `_CO_CCENTER_*` (common).

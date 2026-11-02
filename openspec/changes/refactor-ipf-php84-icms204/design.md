@@ -41,8 +41,7 @@ permission UI and `setGrantedObjectsCriteria()`.
 List screens use `icms_ipf_view_Table` (filters: form, status; quick search; sorting),
 edit screens use `getForm()` + `icms_ipf_Controller`. Known caveat: core's `Table.php`
 uses `FILTER_SANITIZE_STRING` (deprecated in 8.1) and may emit deprecations we cannot fix
-in the module. Mitigation options: (a) accept and document, (b) separate upstream fix in
-`ImpressCMS/impresscms` (see Open Questions).
+in the module. Decision: accept and document; core is NOT modified by this change.
 
 ### D6. Front-end
 Entry scripts stay at their current URLs (`index.php?form=ID`, `message.php?id=ID`, ...)
@@ -72,7 +71,7 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
 ```
 
 ## Risks / Trade-offs
-- IPF deprecations originating in core (D5) → documented, optional upstream PR.
+- IPF deprecations originating in core (D5) → documented in the release notes; no core change.
 - Permission migration is the only data change → idempotent and reversible.
 - Procedural helper removal breaks third-party code calling them → documented in release notes.
 - PHP 4 constructors never ran on PHP 8: restored behaviour may differ from what users
@@ -83,8 +82,9 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
 2. Back up tables (documented), run module update from the ImpressCMS admin.
 3. Rollback: re-install previous version; `grpperm` column is intact.
 
-## Open Questions
-1. Include an upstream fix for `FILTER_SANITIZE_STRING` in impresscms core? (recommended: yes, separate PR)
-2. Keep legacy language packs? (proposal: keep `english`, `german`, `nederlands`, `ja_utf8`, `portuguese`; drop EUC-JP `japanese`)
-3. Version number 2.0 acceptable? (proposal: yes)
-4. Migrate `grpperm` to IPF permissions now, or keep it as the source of truth? (proposal: migrate, keep column)
+## Decisions (resolved)
+1. No upstream fix for `FILTER_SANITIZE_STRING` in impresscms core; deprecations from core `Table.php` are accepted and documented.
+2. Language packs: keep `english`, `german`, `nederlands`, `ja_utf8`, `portuguese`; drop EUC-JP `japanese`.
+3. Module version is 2.0.
+4. Migrate `grpperm` to IPF permissions; the column is kept for rollback.
+5. `declare(strict_types=1)` is not used anywhere in the module.

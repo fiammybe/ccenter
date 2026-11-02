@@ -45,12 +45,13 @@
 ## 6. Install / update / release
 - [ ] 6.1 `icms_version.php` 2.0 manifest, `object_items`, no globals
 - [ ] 6.2 `oninstall.php` via handler; `onupdate.php` idempotent incl. `grpperm` migration
-- [ ] 6.3 Language files: consistent constant sets, English fallback
+- [ ] 6.3 Language files: consistent constant sets, English fallback; remove `language/japanese` (EUC-JP)
 - [ ] 6.4 README, release notes, upgrade notes (removed helpers, requirements)
 - [ ] 6.5 Full regression on 8.2/8.3/8.4, upgrade test from 1.0 data set
 
-## 7. Decisions needed before step 2
-- [ ] 7.1 Upstream fix for `FILTER_SANITIZE_STRING` in impresscms?
-- [ ] 7.2 Which language packs to keep?
-- [ ] 7.3 Confirm version 2.0
-- [ ] 7.4 Confirm `grpperm` → IPF permission migration (column kept)
+## 7. Decisions (resolved)
+- [x] 7.1 No upstream fix for `FILTER_SANITIZE_STRING`
+- [x] 7.2 Keep english, german, nederlands, ja_utf8, portuguese; drop EUC-JP `japanese`
+- [x] 7.3 Version 2.0
+- [x] 7.4 Migrate `grpperm` to IPF permissions (column kept)
+- [x] 7.5 No `declare(strict_types=1)`

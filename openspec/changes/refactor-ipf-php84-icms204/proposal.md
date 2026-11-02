@@ -36,4 +36,4 @@ The module is a half-finished port of a XOOPS-era code base:
   `access-control`, `admin-management`, `frontend-submission`, `install-update`.
 - Affected code: essentially every file; `functions.php` is dissolved.
 - Out of scope: new features, Smarty 3 template syntax, database schema changes,
-  support for ImpressCMS < 2.0.4, upstream core changes (tracked as an optional follow-up).
+  support for ImpressCMS < 2.0.4, core changes (including the `FILTER_SANITIZE_STRING` deprecation in `icms_ipf_view_Table`), `declare(strict_types=1)`.
