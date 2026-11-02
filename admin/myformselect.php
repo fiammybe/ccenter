@@ -3,8 +3,7 @@
  * @file
  * MyFormSelect – a select field with AJAX‑powered user lookup.
  *
- * Replaces the legacy XoopsFormSelect/XoopsPageNav classes with the
- * current IPF classes (`icms_view_FormSelect` and `icms_view_PageNav`).
+ * Built on the core `icms_form_elements_Select` and the local `MyPageNav`.
  *
  * @package ccenter
  * @since 2013
@@ -12,7 +11,9 @@
 
 # $Id: myformselect.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
-class MyFormSelect extends icms_view_FormSelect
+require_once __DIR__ . "/mypagenav.php";
+
+class MyFormSelect extends icms_form_elements_Select
 {
     /**
      * @var string  Placeholder for the page‑navigation markup.
@@ -77,15 +78,9 @@ class MyFormSelect extends icms_view_FormSelect
         $max   = _CC_MAX_USERS;
         $total = cc_group_users($gid, $max, $start, true);
 
-        // Instantiate the IPF PageNav class.
-        $nav        = new icms_view_PageNav(
-            $total,
-            $max,
-            $start,
-            'start',
-            $this->getName()
-        );
-        $this->pagenav = $nav->render();
+        // Page navigation that calls the JavaScript user lookup.
+        $nav = new MyPageNav($total, $max, $start, 'start', $this->getName());
+        $this->pagenav = $nav->renderNav();
     }
 
     /**
@@ -139,8 +134,8 @@ class MyFormSelect extends icms_view_FormSelect
             $js .= "\n<!-- Start UID Selection JavaScript //-->\n"
                 . "<script type='text/javascript'>\n<!--//\n";
         }
-        $js .=
-            '// XMLHttpRequest general handler
+        $js .= <<<'JS'
+// XMLHttpRequest general handler
 function createXmlHttp(){
     if (window.XMLHttpRequest) {             // Mozilla, Firefox, Safari, IE7
         return new XMLHttpRequest();
@@ -154,8 +149,7 @@ function createXmlHttp(){
         return null;
     }
 }
-';
-        $js .= '
+
 function setSelectUID(name, start) {
     var xmlhttp = createXmlHttp();
     var search = xoopsGetElementById(name+"_s");
@@ -177,8 +171,8 @@ function setSelectUID(name, start) {
             }
         }
         opts.length = len;
-        var F = xmlhttp.responseText.split("<!---->\\n");
-        var lines = F[0].split("\\n");
+        var F = xmlhttp.responseText.split("<!---->\n");
+        var lines = F[0].split("\n");
         for (var i in lines) {
             var el = lines[i].split(",", 2);
             if (el.length < 2) continue;
@@ -188,10 +182,11 @@ function setSelectUID(name, start) {
         }
         obj.value = defs;
         var page = xoopsGetElementById(name+"_page");
-        page.innerHTML = F[1].replace(/\\'uid\\'/g, "\\'"+name+"\\'");
+        page.innerHTML = F[1].replace(/\'uid\'/g, "\'"+name+"\'");
     }
 }
-';
+JS;
+        $js .= "\n";
         if ($withtags) {
             $js .= "//--></script>\n<!-- End UID Selection JavaScript //-->\n";
         }

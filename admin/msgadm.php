@@ -4,24 +4,32 @@ include "../../../include/cp_header.php";
 include "../functions.php";
 include_once "myformselect.php";
 
-$op = isset($_REQUEST["op"]) ? $myts->stripSlashesGPC($_REQUEST["op"]) : "";
+if (!function_exists("easiestml")) {
+    /* XXX: support multi lang site */
+    function easiestml($text)
+    {
+        return $text;
+    }
+}
+
+$op = isset($_REQUEST["op"]) ? icms_core_DataFilter::stripSlashesGPC($_REQUEST["op"]) : "";
 
 if (isset($_POST["store"])) {
     $msgid = filter_input(INPUT_POST, "msgid", FILTER_SANITIZE_NUMBER_INT);
     $touid = (int) $_POST["touid"];
     $stat = icms_core_DataFilter::stripSlashesGPC($_POST["status"]);
-    $res = icms::$db->query(
+    $res = icms::$xoopsDB->query(
         "SELECT * FROM " . CCMES . " WHERE msgid=" . $msgid,
     );
     $back = isset($_SERVER["HTTP_REFERER"])
         ? $_SERVER["HTTP_REFERER"]
         : "msgadm.php";
-    if ($res && icms::$db->getRowsNum($res) == 1) {
-        $data = icms::$db->fetchArray($res);
+    if ($res && icms::$xoopsDB->getRowsNum($res) == 1) {
+        $data = icms::$xoopsDB->fetchArray($res);
         $sets = [];
         $log = "";
         if ($data["status"] != $stat) {
-            $sets[] = "status=" . icms::$db->quoteString($stat);
+            $sets[] = "status=" . icms::$xoopsDB->quoteString($stat);
             $log .= sprintf(
                 _CC_LOG_STATUS,
                 $msg_status[$data["status"]],
@@ -43,7 +51,7 @@ if (isset($_POST["store"])) {
         }
         if (count($sets)) {
             $sets[] = "mtime=" . time();
-            $res = icms::$db->query(
+            $res = icms::$xoopsDB->queryF(
                 "UPDATE " .
                     CCMES .
                     " SET " .
@@ -53,7 +61,7 @@ if (isset($_POST["store"])) {
             );
             if ($res && $touid) {
                 // switch person in charge
-                $notification_handler = &xoops_gethandler("notification");
+                $notification_handler = icms::handler('icms_data_notification');
                 $notification_handler->subscribe(
                     "message",
                     $msgid,
@@ -90,7 +98,7 @@ if (isset($_POST["store"])) {
 
 icms_cp_header();
 
-icms::$module->displayAdminMenu(1);
+cc_display_admin_menu(1);
 
 if (empty($_GET["msgid"])) {
     msg_list();
@@ -130,8 +138,8 @@ function msg_list()
         : "";
     $max = icms::$module->config["max_lists"];
 
-    $users = icms::$db->prefix("users");
-    $comms = icms::$db->prefix("xoopscomments");
+    $users = icms::$xoopsDB->prefix("users");
+    $comms = icms::$xoopsDB->prefix("xoopscomments");
     $mid = icms::$module->getVar("mid");
     $sql0 =
         "FROM " .
@@ -149,15 +157,15 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
     if ($search) {
         $sql2 .=
             " AND CONCAT(body,' ',m.email) like " .
-            icms::$db->quoteString("%$search%");
+            icms::$xoopsDB->quoteString("%$search%");
     }
 
-    $res = icms::$db->query("SELECT count(msgid) $sql0 $sql2");
-    [$total] = icms::$db->fetchRow($res);
+    $res = icms::$xoopsDB->query("SELECT count(msgid) $sql0 $sql2");
+    [$total] = icms::$xoopsDB->fetchRow($res);
     $args = $formid ? "formid=$formid" : "";
     $nav = new icms_view_PageNav($total, $max, $start, "start", $args);
 
-    $res = icms::$db->query(
+    $res = icms::$xoopsDB->query(
         "SELECT m.*,title,u.uname, f.uname cfrom, count(com_id) comms $sql0 $sql1 $sql2 GROUP BY msgid" .
             $listctrl->sqlorder(),
         $max,
@@ -187,7 +195,7 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
 </td></tr>\n";
     echo "</table>\n";
 
-    if ($res && icms::$db->getRowsNum($res)) {
+    if ($res && icms::$xoopsDB->getRowsNum($res)) {
         $sorts = ["mtime", "status", "fidref", "touid", "comms"];
         echo "<form method='post' name='msglist'>\n";
         echo "<table class='outer' border='0' cellspacing='1'>\n";
@@ -213,23 +221,17 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
         $dirname = basename(dirname(dirname(__FILE__)));
         $mbase = ICMS_URL . "/modules/$dirname";
         $strcut =
-            ICMS_USE_MULTIBYTES && function_exists("mb_strcut")
+            XOOPS_USE_MULTIBYTES && function_exists("mb_strcut")
                 ? "mb_strcut"
                 : "substr";
-        if (!function_exists("easiestml")) {
-            /* XXX: support multi lang site */
-            function easiestml($text)
-            {
-                return $text;
-            }
-        } else {
+        if (function_exists("easiestml")) {
             $GLOBALS["easiestml_lang"] = substr(
                 $GLOBALS["icmsConfig"]["language"],
                 0,
                 2,
             );
         }
-        while ($data = icms::$db->fetchArray($res)) {
+        while ($data = icms::$xoopsDB->fetchArray($res)) {
             $id = (int) $data["msgid"];
             $title = easiestml(htmlspecialchars($data["title"]));
             $stat = $data["status"];
@@ -295,15 +297,15 @@ function select_widget($name, $sel, $def)
 function msg_detail($msgid)
 {
     global $msg_status;
-    $users = icms::$db->prefix("users");
-    $res = icms::$db->query(
+    $users = icms::$xoopsDB->prefix("users");
+    $res = icms::$xoopsDB->query(
         "SELECT m.*,title,priuid,u.uname,cgroup,f.uname cfrom FROM " .
             CCMES .
             " m LEFT JOIN " .
             FORMS .
             " ON fidref=formid LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid WHERE msgid=$msgid",
     );
-    $data = icms::$db->fetchArray($res);
+    $data = icms::$xoopsDB->fetchArray($res);
     $data["stat"] = $msg_status[$data["status"]];
     $data["cdate"] = formatTimestamp($data["ctime"], "m");
     $data["mdate"] = myTimestamp($data["mtime"], "m", _AM_TIME_UNIT);
@@ -384,22 +386,22 @@ function msg_detail($msgid)
     }
     echo "</table>\n";
 
-    $res = icms::$db->query(
+    $res = icms::$xoopsDB->query(
         "SELECT l.*,uname FROM " .
             CCLOG .
             " l LEFT JOIN " .
-            icms::$db->prefix("users") .
+            icms::$xoopsDB->prefix("users") .
             " ON euid=uid WHERE midref=$msgid ORDER BY logid DESC",
     );
     $log = [];
     echo '<a id="logging"></a><h3>' . _AM_LOGGING . "</h3>\n";
 
-    if (icms::$db->getRowsNum($res)) {
+    if (icms::$xoopsDB->getRowsNum($res)) {
         $anon = $GLOBALS["icmsConfig"]["anonymous"];
         echo "<table>\n";
         $reg = ["/\(comid=(\d+)\)/"];
         $rep = ['(<a href="' . $upage . '#comment\1">comid=\1</a>)'];
-        while ($data = icms::$db->fetchArray($res)) {
+        while ($data = icms::$xoopsDB->fetchArray($res)) {
             $uname = htmlspecialchars(
                 empty($data["uname"]) ? $anon : $data["uname"],
             );

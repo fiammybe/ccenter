@@ -17,9 +17,11 @@ function b_ccenter_receipt_show($options) {
     $uid = icms::$user->getVar('uid');
     $max = array_shift($options);
     $order = array_shift($options);
+    $s = [];
     foreach ($options as $v) {
-	$s[] = "'$v'";
+	$s[] = icms::$xoopsDB->quoteString($v);
     }
+    if (!$s) return null;	// no status selected
     $cond =  " AND status IN (".join(',', $s).")";
     $order = $order=='asc'?'asc':'desc';
     $res = icms::$xoopsDB->query("SELECT msgid, m.mtime, uid, status, title

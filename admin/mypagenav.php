@@ -17,6 +17,9 @@ define("_CC_MAX_USERS", 100); // users/page
  */
 class MyPageNav extends icms_view_PageNav
 {
+    /** @var string Name of the select element updated by the JavaScript lookup. */
+    public $target = "uid";
+
     public function __construct(
         $total,
         $items,
@@ -113,27 +116,27 @@ function cc_group_users(
     $cond = empty($group) ? "" : " AND groupid=$group";
     if (!empty($_REQUEST["s"])) {
         $cond .=
-            " AND uname LIKE " . icms::$db->quoteString($_REQUEST["s"] . "%");
+            " AND uname LIKE " . icms::$xoopsDB->quoteString($_REQUEST["s"] . "%");
     }
     $sql0 =
         "FROM " .
-        icms::$db->prefix("groups_users_link") .
+        icms::$xoopsDB->prefix("groups_users_link") .
         " l, " .
-        icms::$db->prefix("users") .
+        icms::$xoopsDB->prefix("users") .
         " u WHERE l.uid=u.uid" .
         $cond;
     if ($count) {
-        $res = icms::$db->query("SELECT DISTINCT u.uid $sql0");
-        $total = icms::$db->getRowsNum($res);
+        $res = icms::$xoopsDB->query("SELECT DISTINCT u.uid $sql0");
+        $total = icms::$xoopsDB->getRowsNum($res);
         return $total;
     }
-    $res = icms::$db->query(
+    $res = icms::$xoopsDB->query(
         "SELECT u.uid, uname $sql0 GROUP BY u.uid ORDER BY uname",
         $max,
         $start,
     );
     $options = [];
-    while ([$uid, $uname] = icms::$db->fetchRow($res)) {
+    while ([$uid, $uname] = icms::$xoopsDB->fetchRow($res)) {
         $options[$uid] = htmlspecialchars($uname);
     }
     return $options;

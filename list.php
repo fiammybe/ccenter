@@ -4,7 +4,6 @@
 
 include "../../mainfile.php";
 include "functions.php";
-include_once ICMS_ROOT_PATH . "/class/pagenav.php";
 
 $xoopsOption["template_main"] = "ccenter_list.html";
 $uid = is_object(icms::$user) ? (int) icms::$user->getVar("uid") : 0;

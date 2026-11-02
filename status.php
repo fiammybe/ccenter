@@ -24,7 +24,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 			"comment=".icms::$xoopsDB->quoteString($com),
 			"comtime=$now", "atime=$now", "mtime=$now",
 			"status=".icms::$xoopsDB->quoteString(_STATUS_CLOSE));
-	icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(',',$values)." WHERE msgid=$msgid");
+	icms::$xoopsDB->queryF("UPDATE ".CCMES." SET ".join(',',$values)." WHERE msgid=$msgid");
 	$log = _MD_EVALS." ($eval)";
 	$log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[_STATUS_CLOSE]);
 	$evalmsg = _MD_EVALS." ($eval)\n$com";
@@ -56,7 +56,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
 	    list($fid, $s, $title) = icms::$xoopsDB->fetchRow($res);
 	    $now = time();
 	    $set = "SET mtime=$now, touid=$uid, status=".icms::$xoopsDB->quoteString('a');
-	    $res = icms::$xoopsDB->query("UPDATE ".CCMES." $set WHERE msgid=$msgid");
+	    $res = icms::$xoopsDB->queryF("UPDATE ".CCMES." $set WHERE msgid=$msgid");
 	    $log = sprintf(_CC_LOG_TOUSER, _CC_USER_NONE, icms::$user->getVar('uname'));
 	    $log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status['a']);
 	    $notification_handler =& icms::handler('icms_data_notification');

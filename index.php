@@ -50,8 +50,9 @@ get_attr_value($form['optvars']); // set default values
 $items = get_form_attribute($form['defs']);
 if ($form['priuid']< 0) {	// assign group member
     $priuid = isset($_GET['uid'])?intval($_GET['uid']):0;
+    $priuser = null;
     if ($priuid) {
-	$member_handler =& xoops_gethandler('member');
+	$member_handler = icms::handler('icms_member');
 	$priuser = $member_handler->getUser($priuid);
 	if (!is_object($priuser) || !in_array(-$form['priuid'], $priuser->groups())) $priuid=0;
     }
@@ -174,7 +175,7 @@ function store_message($items, $form) {
     }
 
     if ($store!=_DB_STORE_NONE) {
-	$res = icms::$xoopsDB->query("INSERT INTO ".CCMES. "(".join(',',array_keys($values)).") VALUES (".join(',', $values).")");
+	$res = icms::$xoopsDB->queryF("INSERT INTO ".CCMES. "(".join(',',array_keys($values)).") VALUES (".join(',', $values).")");
 	if ($res===false) return array("Error in DATABASE insert");
 	$id = icms::$xoopsDB->getInsertID();
 	if (empty($id)) return array("Internal Error in Store Message");

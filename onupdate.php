@@ -14,7 +14,7 @@ if (icms::$xoopsDB->errno()) { // check exists
     $msgs[] = "Update Database...";
     $msgs[] = "&nbsp;&nbsp; Add new table: <b>ccenter_log</b>";
     
-    icms::$xoopsDB->query("CREATE TABLE ".LOG." (
+    icms::$xoopsDB->queryF("CREATE TABLE ".LOG." (
   logid  int(8) unsigned NOT NULL auto_increment,
   ltime  int(10) NOT NULL default '0',
   fidref int(8) NOT NULL default '0',
@@ -30,17 +30,17 @@ add_field(MSG, "ctime", "INT DEFAULT 0 NOT NULL", "touid");
 // add access time fields (after ccenter-0.87)
 if (add_field(MSG, "atime", "INT DEFAULT 0 NOT NULL", "mtime")) {
     // last access initially same as ctime
-    icms::$xoopsDB->query("UPDATE ".MSG." SET atime=ctime");
+    icms::$xoopsDB->queryF("UPDATE ".MSG." SET atime=ctime");
 }
 // change redirect to optvars field (after ccenter-0.90)
-if (icms::$xoopsDB->query("ALTER TABLE ".FORM." CHANGE redirect optvars TEXT")) {
-    icms::$xoopsDB->query("UPDATE ".FORM." set optvars=concat('redirect=', optvars) WHERE redirect<>''");
+if (icms::$xoopsDB->queryF("ALTER TABLE ".FORM." CHANGE redirect optvars TEXT")) {
+    icms::$xoopsDB->queryF("UPDATE ".FORM." set optvars=concat('redirect=', optvars) WHERE redirect<>''");
     report_message(" Change '<b>redirect</b>' field to '<b>optvars</b>' in ccneter_form table");
 }
 $res = icms::$xoopsDB->query("SHOW COLUMNS FROM ".MSG." LIKE 'email'");
 $data = icms::$xoopsDB->fetchArray($res);
 if ($res && preg_replace('/^varchar\((\d+)\)$/', '\1', $data['Type'])<256) {
-    if (icms::$xoopsDB->query("ALTER TABLE ".MSG." CHANGE email email VARCHAR(256)")) {
+    if (icms::$xoopsDB->queryF("ALTER TABLE ".MSG." CHANGE email email VARCHAR(256)")) {
 	report_message(" Fix '<b>email</b>' field length to <b>256</b>");
     } else {
 	report_message(" Fail to change '<b>email</b>' field length");
@@ -52,7 +52,7 @@ function add_field($table, $field, $type, $after) {
     $res = icms::$xoopsDB->query("SELECT $field FROM $table", 1);
     if (empty($res) && icms::$xoopsDB->errno()) { // check exists
 	if ($after) $after = "AFTER $after";
-	$res = icms::$xoopsDB->query("ALTER TABLE $table ADD $field $type $after");
+	$res = icms::$xoopsDB->queryF("ALTER TABLE $table ADD $field $type $after");
     } else return false;
     report_message(" Add new field: <b>$table.$field</b>");
     if (!$res) {

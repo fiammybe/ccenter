@@ -3,6 +3,7 @@
 # $Id: help.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
 include '../../../include/cp_header.php';
+include '../functions.php';
 global $mydirpath, $mydirname;
 $mydirpath = dirname(dirname(__FILE__));
 $mydirname = basename($mydirpath);
@@ -21,7 +22,7 @@ if(!function_exists("file_get_contents")) {
 }
 
 icms_cp_header();
-icms::$module->displayAdminMenu(0);
+cc_display_admin_menu(0);
 if (function_exists('Legacy_function_stylesheet')) {
     echo "<link href=\"".ICMS_URL."/modules/legacyRender/admin/css.php?file=module.css&amp;dirname=legacy\" media=\"all\" type=\"text/css\" rel=\"stylesheet\"/>\n";
 }

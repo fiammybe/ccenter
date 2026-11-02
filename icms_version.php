@@ -63,8 +63,8 @@ $modversion['adminmenu'] = "admin/menu.php";
 
 // Menu
 $modversion['hasMain'] = 1;
-global $icmsUser;
-if (!empty($icmsUser)) {
+
+if (is_object(icms::$user)) {
     $modversion['sub'][] = array(
 									'name'	=> _MI_CCENTER_MYCONTACT,
 									'url'	=> "list.php"

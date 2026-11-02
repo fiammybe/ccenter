@@ -71,20 +71,15 @@ function get_attr_value($pri, $name = null, $value = null)
 		// override module config values
 		$mydirname = basename(dirname(__FILE__));
 		if (
-			!empty($GLOBALS["icmsModule"]) &&
-			$GLOBALS["icmsModule"]->getVar("dirname") == $mydirname
+			!empty(icms::$module) &&
+			icms::$module->getVar("dirname") == $mydirname
 		) {
-			$def_attr = $GLOBALS["icmsModuleConfig"]["def_attrs"];
+			$configs = icms::$module->config;
 		} else {
-			$module_handler = icms::handler("icms_module");
-			$module = &$module_handler->getByDirname($mydirname);
-			$config_handler = icms::handler("icms_config");
-			$configs = &$config_handler->getConfigsByCat(
-				0,
-				$module->getVar("mid"),
-			);
-			$def_attr = $configs["def_attrs"];
+			$module = icms::handler("icms_module")->getByDirname($mydirname);
+			$configs = is_object($module) ? $module->config : [];
 		}
+		$def_attr = $configs["def_attrs"] ?? "";
 		foreach (unserialize_vars($def_attr) as $k => $v) {
 			$defs[$k] = $v;
 		}
@@ -280,7 +275,9 @@ function get_form_attribute($defs, $labels = "", $prefix = "cc")
 			$attr["cols"] = get_attr_value($attr, "cols");
 		} else {
 			$attr["size"] = get_attr_value($attr, "size");
+			$attr["maxlength"] = get_attr_value($attr, "maxlength");
 		}
+		$attr += ["check" => ""]; // templates read attr.check for every item
 
 		$fname = $prefix . ++$num;
 		$result[$name] = [
@@ -586,6 +583,7 @@ if (!function_exists("unserialize_vars")) {
 	// expand: label=value[,\n](label=value...)
 	function unserialize_vars($text, $rev = false)
 	{
+		$text = (string) $text;
 		if (preg_match("/^\w+: /", $text)) {
 			return unserialize_text($text);
 		}
@@ -636,13 +634,15 @@ if (!function_exists("serialize_text")) {
 	function unserialize_text($text)
 	{
 		$array = [];
-		foreach (preg_split("/\r?\n/", $text) as $ln) {
+		$last = null; // name of the entry that collects continuation lines
+		foreach (preg_split("/\r?\n/", (string) $text) as $ln) {
 			if (preg_match("/^\s/", $ln)) {
-				$val .= "\n" . substr($ln, 1);
+				if ($last !== null) {
+					$array[$last] .= "\n" . substr($ln, 1);
+				}
 			} elseif (preg_match('/^([^:]*):\s?(.*)$/', $ln, $d)) {
-				$name = $d[1];
-				$array[$name] = $d[2];
-				$val = &$array[$name];
+				$last = $d[1];
+				$array[$last] = $d[2];
 			}
 		}
 		return $array;
@@ -784,7 +784,7 @@ function cc_check_perm($data)
 function cc_get_message($msgid)
 {
 	$res = icms::$xoopsDB->query(
-		"SELECT m.*, title FROM " .
+		"SELECT m.*, title, cgroup FROM " .
 			CCMES .
 			" m," .
 			FORMS .
@@ -795,9 +795,11 @@ function cc_get_message($msgid)
 			" AND fidref=formid",
 	);
 
-	$data = icms::$xoopsDB->fetchArray($res);
-	if (!cc_check_perm($data)) {
-		redirect_header(ICMS_URL . "/user.php", 3, _NOPERM);
+	$data = $res ? icms::$xoopsDB->fetchArray($res) : false;
+	if (!$data || !cc_check_perm($data)) {
+		// members would bounce between user.php and this page, so send them to the module index
+		$back = is_object(icms::$user) ? ICMS_URL . "/modules/" . basename(__DIR__) . "/" : ICMS_URL . "/user.php";
+		redirect_header($back, 3, _NOPERM);
 		exit();
 	}
 	return $data;
@@ -834,7 +836,7 @@ function cc_onetime_ticket($genseed = "mypasswdbasestring")
 
 function cc_delete_message($msgid)
 {
-	//$res = icms::$xoopsDB->query("DELETE FROM ".CCMES." WHERE msgid=".$msgid);
+	//$res = icms::$xoopsDB->queryF("DELETE FROM ".CCMES." WHERE msgid=".$msgid);
 	$dir = ICMS_UPLOAD_PATH . cc_attach_path(0, "");
 	$dh = opendir($dir);
 	while ($file = readdir($dh)) {
@@ -889,17 +891,17 @@ function cc_notify_mail($tpl, $tags, $users, $from = "")
 	}
 	if (is_object($users)) {
 		switch ($users->getVar("notify_method")) {
-			case ICMS_NOTIFICATION_METHOD_PM:
+			case XOOPS_NOTIFICATION_METHOD_PM:
 				$xoopsMailer->usePM();
 				$sender = is_object(icms::$user)
 					? icms::$user
-					: new icms_member_user();
+					: new icms_member_user_Object();
 				$xoopsMailer->setFromUser($sender);
 				break;
-			case ICMS_NOTIFICATION_METHOD_EMAIL:
+			case XOOPS_NOTIFICATION_METHOD_EMAIL:
 				$xoopsMailer->useMail();
 				break;
-			case ICMS_NOTIFICATION_METHOD_DISABLE:
+			case XOOPS_NOTIFICATION_METHOD_DISABLE:
 				return 0;
 			default:
 				return 1;
@@ -1124,14 +1126,41 @@ function myTimestamp($t, $fmt = "l", $unit = "%dmin,%dhour,%dday,past %s")
 	return sprintf($units[3], $ret);
 }
 
+/**
+ * Display the module's admin menu.
+ *
+ * ImpressCMS loads admin/menu.php with include_once. When the system builds its admin menu cache
+ * in the same request (cold cache) the file has already been included for another module object,
+ * so the current module ends up without menu data and displayAdminMenu() fails on PHP 8
+ * (count(null)). Load the menu data ourselves in that case.
+ *
+ * @param int    $current    index of the active menu entry
+ * @param string $breadcrumb breadcrumb trail
+ */
+function cc_display_admin_menu($current = 0, $breadcrumb = "")
+{
+	$module = icms::$module;
+	if (!is_array($module->getAdminMenu()) || !is_array($module->getAdminHeaderMenu())) {
+		// include in an isolated scope: menu.php uses (and unsets) its own $module variable
+		$load = static function () {
+			$adminmenu = [];
+			$headermenu = [];
+			include __DIR__ . "/admin/menu.php";
+			return [$adminmenu, $headermenu];
+		};
+		[$module->adminmenu, $module->adminheadermenu] = $load();
+	}
+	$module->displayAdminMenu($current, $breadcrumb);
+}
+
 // adhoc class - not for reuse
 class ListCtrl
 {
-	var $name;
-	var $vars;
-	var $combo;
+	public $name;
+	public $vars;
+	public $combo;
 
-	function ListCtrl($name, $init = [], $combo = "")
+	public function __construct($name, $init = [], $combo = "")
 	{
 		if (empty($combo)) {
 			$combo = icms::$module->config["status_combo"];
@@ -1169,7 +1198,7 @@ class ListCtrl
 		$result = [];
 		$orders = $this->getVar("orders");
 		foreach ($labels as $k => $v) {
-			$lab = ["text" => $v, "name" => $k];
+			$lab = ["text" => $v, "name" => $k, "extra" => ""];
 			if (isset($this->vars[$k])) {
 				// with ctrl
 				$n = array_search($k, $orders);
@@ -1343,6 +1372,8 @@ function render_form(&$form, $op)
 {
 	global $xoopsTpl;
 
+	$template = "ccenter_form.html";
+
 	set_checkvalue($form);
 	$html = 0;
 	$br = 1;
@@ -1394,18 +1425,28 @@ function render_form(&$form, $op)
 	}
 	$dirname = basename(dirname(__FILE__));
 	$form["cc_url"] = ICMS_URL . "/modules/$dirname";
+	// keys the (user overridable) templates read unconditionally
+	$form += [
+		"desc" => "",
+		"submit_opts" => "",
+		"note" => "",
+		"lang_note" => "",
+		"check_script" => "",
+		"hasfile" => false,
+		"priuser" => ["uid" => 0, "uname" => "", "name" => ""],
+	];
+	$xoopsTpl->assign("heading", "");
 	$xoopsTpl->assign("form", $form);
 	return $template;
 }
 
-class XoopsBreadcrumbs
+class CcBreadcrumbs
 {
-	var $moddir;
-	var $pairs;
+	public $moddir;
+	public $pairs;
 
-	function XoopsBreadcrumbs()
+	public function __construct()
 	{
-		global $xoopsTpl;
 		$this->moddir =
 			ICMS_URL . "/modules/" . icms::$module->getVar("dirname") . "/";
 		$this->pairs = [
@@ -1415,8 +1456,8 @@ class XoopsBreadcrumbs
 
 	function set($name, $url)
 	{
-		if (preg_match("/^\w+:\/\//", $url)) {
-			$url = $this->moddir . $url;
+		if ($url !== "" && !preg_match("/^\w+:\/\//", $url)) {
+			$url = $this->moddir . $url; // make module-relative links absolute
 		}
 		$this->pairs[] = [
 			"name" => htmlspecialchars(strip_tags($name), ENT_QUOTES),

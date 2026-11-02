@@ -4,7 +4,6 @@
 
 include "../../mainfile.php";
 include "functions.php";
-include_once ICMS_ROOT_PATH.'/class/pagenav.php';
 
 $xoopsOption['template_main'] = "ccenter_charge.html";
 $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
@@ -16,7 +15,7 @@ if (!is_object(icms::$user)) {
 include ICMS_ROOT_PATH."/header.php";
 
 // query from login user
-if (icms::$user->isAdmin($icmsModule->getVar('mid'))) {
+if (icms::$user->isAdmin(icms::$module->getVar('mid'))) {
     if (isset($_GET['touid'])) {
 		$uid = (int) $_GET['touid'];
 	}

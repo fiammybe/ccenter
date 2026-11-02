@@ -26,7 +26,8 @@ if ($uid == $data['uid'] && $now>$data['atime']) {
 
 include ICMS_ROOT_PATH."/header.php";
 
-$breadcrumbs = new XoopsBreadcrumbs(_MD_CCENTER_RECEPTION, 'reception.php');
+$breadcrumbs = new CcBreadcrumbs();
+$breadcrumbs->set(_MD_CCENTER_RECEPTION, 'reception.php');
 
 $pass = isset($_GET['p'])?$_GET['p']:'';
 $add = $pass?"p=".urlencode($pass):"";

@@ -63,7 +63,7 @@ function ccenter_com_approve(&$comment){
 	    $msg .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[$status]);
 	    $values[] = 'status='.icms::$xoopsDB->quoteString($status);
 	}
-	icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(',', $values)." WHERE msgid=$msgid");
+	icms::$xoopsDB->queryF("UPDATE ".CCMES." SET ".join(',', $values)." WHERE msgid=$msgid");
 	cc_log_message($data['fidref'], $msg." (comid=$comid)", $msgid);
 	// notification for guest contact
 	if (is_object(icms::$user) && $data['uid']==0 && $email) {
@@ -73,7 +73,7 @@ function ccenter_com_approve(&$comment){
 			  'X_ITEM_TYPE'=>'', 'X_ITEM_NAME'=>$subj,
 			  'X_COMMENT_URL'=>$url, 'FROM_EMAIL'=>$email,
 			  'SUBJECT'=>$subj);
-	    $xoopsMailer =& getMailer();
+	    $xoopsMailer = new icms_messaging_Handler();
 	    $xoopsMailer->useMail();
 	    $xoopsMailer->setFromEmail($icmsConfig['adminmail']);
 	    $xoopsMailer->setFromName(icms::$module->getVar('name'));
