@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  # ImpressCMS release the module is tested against (tag or branch of ImpressCMS/impresscms)
+  ICMS_REF: v2.0.4
+
+jobs:
+  static:
+    name: Static checks (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.2", "8.3", "8.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ImpressCMS/impresscms
+          ref: ${{ env.ICMS_REF }}
+          path: impresscms
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - run: composer install --no-interaction --prefer-dist
+      - name: Syntax
+        run: composer lint
+      - name: PHP compatibility (8.2 and up)
+        run: composer compat
+      - name: PHPUnit
+        run: composer test
+      - name: PHPStan
+        run: composer stan
+        env:
+          ICMS_HTDOCS: ${{ github.workspace }}/impresscms/htdocs
+
+  e2e:
+    name: End-to-end (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    needs: static
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.2", "8.3", "8.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ImpressCMS/impresscms
+          ref: ${{ env.ICMS_REF }}
+          path: impresscms
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Install ImpressCMS and ccenter on PHP ${{ matrix.php }}
+        run: tests/setup.sh ${{ matrix.php }}
+        env:
+          ICMS_SRC: ${{ github.workspace }}/impresscms
+          NODE_PATH: ${{ github.workspace }}/tests/e2e/node_modules
+      - name: Smoke tests
+        working-directory: tests/e2e
+        run: |
+          V='${{ matrix.php }}'
+          BASE_URL="http://localhost:808${V#8.}" COMPOSE_PROJECT="ccenter-${V//./}" npm test
+      - name: Container logs
+        if: failure()
+        run: docker compose -f tests/docker-compose.yml -p "ccenter-${V//./}" logs --tail=200 || true
+        env:
+          V: ${{ matrix.php }}

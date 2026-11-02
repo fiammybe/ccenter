@@ -1,0 +1,12 @@
+{
+  "name": "ccenter-e2e",
+  "private": true,
+  "description": "End-to-end smoke tests for the ccenter module",
+  "scripts": {
+    "test": "node --test smoke.test.js",
+    "install-wizard": "node install.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

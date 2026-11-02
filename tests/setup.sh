@@ -19,10 +19,6 @@ rm -rf "$WORK"; mkdir -p "$WORK/htdocs" "$WORK/trust"
 rsync -a "$ICMS_SRC/htdocs/" "$WORK/htdocs/"
 mkdir -p "$WORK/htdocs/modules/ccenter"
 
-# Protector (bundled with core) throttles rapid test traffic (DoS / brute-force counters answer with blank pages),
-# and is not what is being tested: switch its preload off in the test copy.
-rm -f "$WORK/htdocs/plugins/preloads/protector.php"
-
 # Test-only patch of the *copy* of core: the ICMS error handler swallows runtime warnings/notices/deprecations,
 # so forward them to the PHP error log where the smoke tests can look for module-originated entries.
 LOGGER="$WORK/htdocs/libraries/icms/core/Logger.php"
@@ -43,6 +39,11 @@ for _ in $(seq 1 40); do
 done
 
 ( cd "$HERE/e2e" && BASE_URL="http://localhost:$PORT" node install.js )
+# Protector (bundled with core) throttles rapid test traffic: its DoS / brute-force counters answer with blank
+# pages. It is not what is being tested, so switch its preload off in the test copy. This must happen after the
+# installation because installing the Protector module puts the preload back.
+rm -f "$WORK/htdocs/plugins/preloads/protector.php"
+
 # ImpressCMS silences PHP diagnostics unless debug mode is on; turn it on so regressions show up in the PHP log.
 docker compose -f "$HERE/docker-compose.yml" -p "$PROJECT" exec -T db mariadb -uroot -proot icms \
   -e "UPDATE icms_config SET conf_value='1' WHERE conf_name='debug_mode'"

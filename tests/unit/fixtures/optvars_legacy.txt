@@ -1,0 +1,4 @@
+notify_with_email=1
+redirect=/thanks.php
+reply_comment="Thank you, we will answer soon"
+others=a=b

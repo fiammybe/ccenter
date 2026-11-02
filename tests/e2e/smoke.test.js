@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const h = require('./helpers');
-const { updateModule } = h;
+const { updateModule, clickAndSettle, eventually } = h;
 
 const MOD = h.cfg.base + '/modules/ccenter';
 const ERR_TEXT = /This page cannot be displayed due to an internal error|Fatal error|Parse error|Warning:|Deprecated:|Notice:/;
@@ -33,7 +33,7 @@ async function submitSample(name) {
   await p.fill('[name=cc2_conf]', 'visitor@example.com');
   await p.check('[name=cc3][value="Others"]');
   await p.fill('[name=cc4]', 'second message');
-  await Promise.all([p.waitForLoadState('load'), p.click('input[type=submit][value=Confirm]')]);
+  await clickAndSettle(p, 'input[type=submit][value=Confirm]');
   await Promise.all([p.waitForURL(/message\.php\?id=\d+/, { timeout: 15000 }),
     p.click('form[name=order] input[type=submit]:not([name=edit])')]).catch(async (e) => {
     throw new Error(`submitSample did not reach the message page (${p.url()}): ${(await bodyText(p)).slice(0, 500)}`);
@@ -43,13 +43,32 @@ async function submitSample(name) {
   return { msgId: u.searchParams.get('id'), onepass: u.searchParams.get('p') };
 }
 
+// ImpressCMS keeps sessions in the database without locking, so a forgotten tab that still reloads or
+// pings in the background can overwrite the session (and the form tokens in it) of the tab that is
+// being tested. Every page opened by a test is therefore closed when the test ends.
+const openPages = [];
+function trackPages(ctx) {
+  const open = ctx.newPage.bind(ctx);
+  ctx.newPage = async () => {
+    const page = await open();
+    openPages.push(page);
+    return page;
+  };
+  return ctx;
+}
+test.afterEach(async () => {
+  while (openPages.length) await openPages.pop().close().catch(() => {});
+});
+
 test.before(async () => {
   browser = await chromium.launch();
-  admin = await browser.newContext();
-  guest = await browser.newContext();
+  admin = trackPages(await browser.newContext());
+  guest = trackPages(await browser.newContext());
   // keep the suite repeatable: only the sample form (id of the installer) survives
   h.sql("DELETE FROM icms_ccenter_form WHERE title<>'Contact us'; TRUNCATE icms_ccenter_message; TRUNCATE icms_ccenter_log; TRUNCATE icms_protector_access; DELETE FROM icms_xoopscomments WHERE com_modid=(SELECT mid FROM icms_modules WHERE dirname='ccenter')");
-  await h.login(await admin.newPage());
+  const loginPage = await admin.newPage();
+  await h.login(loginPage);
+  await loginPage.close();
   h.clearPhpLog();
 });
 test.after(async () => { await browser.close(); });
@@ -86,7 +105,7 @@ test('anonymous visitor submits the sample form (confirm, then store)', async ()
   await p.fill('[name=cc2_conf]', 'visitor@example.com');
   await p.check('[name=cc3][value="Query about us"]');
   await p.fill('[name=cc4]', 'Hello ccenter\nsecond line');
-  await Promise.all([p.waitForLoadState('load'), p.click('input[type=submit][value=Confirm]')]);
+  await clickAndSettle(p, 'input[type=submit][value=Confirm]');
   await assertOk(p, 'confirm page');
   const store = await p.$('form[name=order] input[type=submit]:not([name=edit])');
   assert.ok(store, 'confirm page offers a send button');
@@ -104,7 +123,7 @@ test('anonymous visitor submits the sample form (confirm, then store)', async ()
 test('validation rejects an empty required field', async () => {
   const p = await guest.newPage();
   await p.goto(`${MOD}/index.php?form=${state.formId}`);
-  await Promise.all([p.waitForLoadState('load'), p.click('input[type=submit][value=Confirm]')]);
+  await clickAndSettle(p, 'input[type=submit][value=Confirm]');
   assert.match(p.url(), /index\.php/);
   await assertOk(p, 'validation');
 });
@@ -124,9 +143,9 @@ test('admin creates and edits a form', async () => {
   await p.goto(`${MOD}/admin/index.php?op=edit`);
   await p.fill('[name=title]', 'Smoke form');
   await p.fill('[name=defs]', 'Subject*,size=30\nDetails,textarea');
-  await Promise.all([p.waitForLoadState('load'), p.click('[name=formdefs]')]);
+  await clickAndSettle(p, '[name=formdefs]');
   await assertOk(p, 'after save');
-  assert.equal(h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Smoke form'"), '1');
+  await eventually(() => h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Smoke form'") === '1');
 });
 
 test('person in charge opens the message, status becomes accepted, then replied', async () => {
@@ -135,10 +154,10 @@ test('person in charge opens the message, status becomes accepted, then replied'
   await assertOk(p, 'message as admin');
   assert.equal(h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${state.msgId}`), 'a');
   await p.selectOption('select[name=status]', 'b');
-  await Promise.all([p.waitForLoadState('load'), p.click('form[action="status.php"] input[type=submit]')]);
+  await clickAndSettle(p, 'form[action="status.php"] input[type=submit]');
   await p.waitForURL(/message\.php/, { timeout: 15000 });
-  assert.equal(h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${state.msgId}`), 'b');
-  assert.ok(Number(h.sql(`SELECT count(*) FROM icms_ccenter_log WHERE midref=${state.msgId}`)) >= 1, 'status changes are logged');
+  await eventually(() => h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${state.msgId}`) === 'b');
+  await eventually(() => Number(h.sql(`SELECT count(*) FROM icms_ccenter_log WHERE midref=${state.msgId}`)) >= 1);   // status changes are logged
 });
 
 test('message appears in the staff lists and message admin', async () => {
@@ -157,10 +176,10 @@ test('guest evaluates the replied message with the one-time password', async () 
   await assertOk(p, 'guest message');
   assert.ok(await p.$('input[name=eval]'), 'evaluation form is offered: ' + (await bodyText(p)).slice(0, 400));
   await p.check('input[name=eval][value="5"]');
-  await Promise.all([p.waitForLoadState('load'), p.click('form[action="status.php"] input[type=submit]')]);
+  await clickAndSettle(p, 'form[action="status.php"] input[type=submit]');
   await p.waitForURL(/message\.php/, { timeout: 15000 });
-  assert.equal(h.sql(`SELECT value FROM icms_ccenter_message WHERE msgid=${state.msgId}`), '5');
-  assert.equal(h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${state.msgId}`), 'c');
+  await eventually(() => h.sql(`SELECT value FROM icms_ccenter_message WHERE msgid=${state.msgId}`) === '5');
+  await eventually(() => h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${state.msgId}`) === 'c');
 });
 
 test('another visitor cannot open the message without the one-time password', async () => {
@@ -172,10 +191,17 @@ test('another visitor cannot open the message without the one-time password', as
 });
 
 test('admin exports messages as CSV', async () => {
-  const r = await admin.request.get(`${MOD}/export.php?form=${state.formId}&range=all`);
-  assert.equal(r.status(), 200);
-  const body = await r.text();
-  assert.match(body, /Test Visitor/);
+  // fetch from inside the page: a separate request client has another User-Agent, and ImpressCMS
+  // would treat that as a hijacked session
+  const p = await admin.newPage();
+  await p.goto(`${MOD}/index.php`);
+  const res = await p.evaluate(async (url) => {
+    const r = await fetch(url, { credentials: 'include' });
+    return { status: r.status, type: r.headers.get('content-type'), body: await r.text() };
+  }, `${MOD}/export.php?form=${state.formId}&range=all`);
+  assert.equal(res.status, 200);
+  assert.match(res.type, /text\/csv/);
+  assert.match(res.body, /Test Visitor/);
 });
 
 test('admin comments on the message', async () => {
@@ -183,11 +209,10 @@ test('admin comments on the message', async () => {
   await p.goto(`${MOD}/comment_new.php?com_itemid=${state.msgId}&com_order=1&com_mode=nest`);
   await assertOk(p, 'comment form');
   await p.fill('[name=com_text]', 'We have answered your question.');
-  await Promise.all([p.waitForLoadState('load'), p.click('[name=com_dopost]')]);
-  await p.waitForTimeout(1500);
+  await clickAndSettle(p, '[name=com_dopost]');
   await assertOk(p, 'after comment');
-  assert.equal(h.sql(`SELECT count(*) FROM icms_xoopscomments WHERE com_itemid=${state.msgId}`), '1');
-  assert.ok(Number(h.sql(`SELECT count(*) FROM icms_ccenter_log WHERE midref=${state.msgId} AND comment LIKE '%comid=%'`)) >= 1, 'comment is logged');
+  await eventually(() => h.sql(`SELECT count(*) FROM icms_xoopscomments WHERE com_itemid=${state.msgId}`) === '1');
+  await eventually(() => Number(h.sql(`SELECT count(*) FROM icms_ccenter_log WHERE midref=${state.msgId} AND comment LIKE '%comid=%'`)) >= 1);   // comment is logged
 });
 
 test('admin deletes a message by setting status "deleted"', async () => {
@@ -195,9 +220,9 @@ test('admin deletes a message by setting status "deleted"', async () => {
   const p = await admin.newPage();
   await p.goto(`${MOD}/message.php?id=${m.msgId}`);
   await p.selectOption('select[name=status]', 'x');
-  await Promise.all([p.waitForLoadState('load'), p.click('form[action="status.php"] input[type=submit]')]);
+  await clickAndSettle(p, 'form[action="status.php"] input[type=submit]');
   await p.waitForURL(/reception\.php/, { timeout: 15000 });
-  assert.equal(h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${m.msgId}`), 'x');
+  await eventually(() => h.sql(`SELECT status FROM icms_ccenter_message WHERE msgid=${m.msgId}`) === 'x');
   await p.goto(`${MOD}/message.php?id=${m.msgId}`);
   assert.ok(!/To Be Deleted/.test(await bodyText(p)), 'deleted message is no longer shown');
 });
@@ -207,10 +232,9 @@ test('admin deletes a form', async () => {
   const id = h.sql("SELECT formid FROM icms_ccenter_form WHERE title='Smoke form'");
   await p.goto(`${MOD}/admin/index.php?op=delete&formid=${id}`);
   await assertOk(p, 'delete confirmation');
-  await Promise.all([p.waitForLoadState('load'), p.click('.confirmMsg input[type=submit]')]);
-  await p.waitForTimeout(1500);
+  await clickAndSettle(p, '.confirmMsg input[type=submit]');
   await assertOk(p, 'after delete');
-  assert.equal(h.sql(`SELECT count(*) FROM icms_ccenter_form WHERE formid=${id}`), '0');
+  await eventually(() => h.sql(`SELECT count(*) FROM icms_ccenter_form WHERE formid=${id}`) === '0');
 });
 
 test('no PHP diagnostics were logged by module code', () => {

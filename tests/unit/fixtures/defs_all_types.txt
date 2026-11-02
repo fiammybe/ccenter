@@ -1,0 +1,14 @@
+# Contact details
+Your name*,size=40
+Email*,mail,size=60
+Phone,text,check=tel
+About*,radio,Site contents+,Query about us,Others
+Topics,checkbox,News+,Forum,Gallery,*
+Country,select,Belgium,Netherlands+,Other
+Label=Shown label,text,maxlength=20
+"Quoted, name",text
+Message,textarea,cols=50,rows=5,#Please be precise
+Upload,file
+Hidden id,hidden,42
+Visit date,date
+Greeting,const,Hello {X_UNAME}

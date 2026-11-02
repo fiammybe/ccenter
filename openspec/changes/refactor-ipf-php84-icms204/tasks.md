@@ -1,19 +1,19 @@
 # Tasks
 
 ## 0. Test environment (baseline first)
-- [ ] 0.1 Docker Compose: MariaDB + PHP 8.2/8.3/8.4 (Apache) + ImpressCMS 2.0.4 package
-- [ ] 0.2 Script to install ImpressCMS and the module non-interactively
-- [ ] 0.3 Playwright smoke suite for the current flows (record baseline behaviour)
-- [ ] 0.4 PHPUnit bootstrap, fixtures for `defs`, `optvars` and `body` (legacy formats) from the current implementation
-- [ ] 0.5 CI: `php -l` matrix, PHPCompatibility 8.2-8.4, PHPStan level 5, smoke suite
+- [x] 0.1 Docker Compose: MariaDB + PHP 8.2/8.3/8.4 (Apache) + ImpressCMS 2.0.4 package
+- [x] 0.2 Script to install ImpressCMS and the module non-interactively
+- [x] 0.3 Playwright smoke suite for the current flows (record baseline behaviour)
+- [x] 0.4 PHPUnit bootstrap, fixtures for `defs`, `optvars` and `body` (legacy formats) from the current implementation
+- [x] 0.5 CI workflow (`.github/workflows/ci.yml`): `php -l`, PHPCompatibility 8.2-8.4, PHPUnit, PHPStan (level 1 for now, raise per phase), smoke matrix. NOTE: written but not yet run on GitHub; PHPCompatibility could not be installed in the offline sandbox
 
 ## 1. Compatibility baseline (still procedural)
-- [ ] 1.1 Fix parse errors in `admin/mymenu.php` and `admin/myformselect.php`
-- [ ] 1.2 Replace `xoops_gethandler`, `icms::$xoopsDB`, `FILTER_SANITIZE_STRING`
-- [ ] 1.3 Convert PHP 4 constructors (`ListCtrl`, `XoopsBreadcrumbs`); declare properties
-- [ ] 1.4 Fix nullable-parameter and null-to-string deprecations found by CI
-- [ ] 1.5 Replace `global $icmsUser` and `$GLOBALS['icmsConfig']` usage
-- [ ] 1.6 Exit criterion: smoke suite green on 8.2/8.3/8.4 with `E_ALL`
+- [x] 1.1 Fix parse errors in `admin/mymenu.php` and `admin/myformselect.php`
+- [x] 1.2 Replace `xoops_gethandler`, `FILTER_SANITIZE_STRING` and other removed APIs; use the legacy DB facade `icms::$xoopsDB` consistently (`icms::$db` is the bare PDO object). Raw SQL itself goes away in phase 2
+- [x] 1.3 Convert PHP 4 constructors (`ListCtrl`, `XoopsBreadcrumbs`); declare properties
+- [x] 1.4 Fix nullable-parameter and null-to-string deprecations found by CI
+- [x] 1.5 Replace `global $icmsUser`, `$icmsModule`, `$icmsModuleConfig` (remaining `global $icmsConfig` reads for language/sitename move to phase 2)
+- [x] 1.6 Exit criterion: smoke suite green on 8.2/8.3/8.4 with `E_ALL`
 
 ## 2. Model layer (IPF)
 - [ ] 2.1 `Form`, `Message`, `Log` objects with vars, controls and validation
