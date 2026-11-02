@@ -134,3 +134,4 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
 3. Module version is 2.0.
 4. Migrate `grpperm` to IPF permissions; the column is kept for rollback.
 5. `declare(strict_types=1)` is not used anywhere in the module.
+6. All persisted structured data is JSON, including the `def_attrs` module preference (legacy `key=value` text is read and converted on update). The legacy CSV-like DSL survives only as admin import/export.

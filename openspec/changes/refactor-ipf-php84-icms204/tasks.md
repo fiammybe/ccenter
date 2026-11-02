@@ -57,3 +57,4 @@
 - [x] 7.3 Version 2.0
 - [x] 7.4 Migrate `grpperm` to IPF permissions (column kept)
 - [x] 7.5 No `declare(strict_types=1)`
+- [x] 7.6 Everything on JSON, including `def_attrs`
