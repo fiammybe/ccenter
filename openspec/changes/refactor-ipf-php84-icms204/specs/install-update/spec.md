@@ -27,6 +27,15 @@ no string-built SQL for values, reporting each step in the update message list, 
 - **WHEN** the module is updated from 1.0
 - **THEN** missing columns/tables are added, legacy permissions are migrated, and a second update changes nothing
 
+### Requirement: JSON conversion on update
+The updater SHALL convert `ccenter_form.defs`, `ccenter_form.optvars`, `ccenter_message.body` and the `def_attrs`
+module preference to JSON, in batches that fit PHP time limits, and SHALL report progress in the update messages.
+
+#### Scenario: Large message table
+- **GIVEN** 100 000 stored messages
+- **WHEN** the module is updated
+- **THEN** conversion proceeds in batches without exceeding limits, and can be resumed by re-running the update
+
 ### Requirement: Uninstall
 Uninstalling SHALL drop module tables (via the standard mechanism), remove permissions, and not leave uploads
 referenced by deleted messages unreachable (documented cleanup).

@@ -18,11 +18,57 @@ instantiates `mod_<dir>_<Name>Handler` with `icms::$xoopsDB`. IPF derives table 
 table `ccenter_form`; likewise `message`/`msgid` and `log`/`logid`.
 Alternative (new tables + data migration) rejected: risk without benefit.
 
-### D2. Keep the `body` and `defs` formats
-`ccenter_message.body` (serialized text) and `ccenter_form.defs` (line-based DSL) are
-modelled as `XOBJ_DTYPE_TXTAREA` with raw access (`getVar('x', 'n')`). Parsing moves to
-`mod_ccenter_FormDefinition` and `mod_ccenter_MessageBody`, covered by unit tests built from
-fixtures of the current output.
+### D2. JSON persistence (replaces CSV-like / ad-hoc text formats)
+Today three home-grown formats are parsed with regexes (`cc_csv_parse`, `unserialize_vars`,
+`unserialize_text`). They have real defects: comma *and* tab as delimiters, quoting rules that
+differ per format, uninitialised variables/references in `unserialize_text`, and lossy message
+bodies (checkbox arrays are flattened to `"a, b"`, only the option *label* is stored, not its value,
+and newlines are encoded with a leading tab). All three become JSON, stored in the existing
+`text` columns (no DDL change; works identically on MySQL and MariaDB).
+
+**Form schema** (`ccenter_form.defs`):
+```json
+{"version": 1, "items": [
+  {"key": "Your name", "type": "text", "label": "Your name", "required": true,
+   "attrs": {"size": 40}, "default": "{X_UNAME}"},
+  {"key": "About", "type": "radio", "label": "About", "required": true,
+   "options": [{"value": "Site contents", "label": "Site contents", "default": true},
+               {"value": "Others", "label": "Others"}]},
+  {"type": "comment", "text": "Fields marked * are required"}
+]}
+```
+- `key` is the stable identifier. Migrated items use the legacy name verbatim so existing message
+  bodies still map; new items get a generated slug. Keys are unique per form.
+- `{X_<USERFIELD>}` placeholders (current `eval_user_value()`, which is token substitution, **not** `eval`)
+  are kept in `default`.
+
+**Option variables** (`ccenter_form.optvars` and module preference `def_attrs`):
+a JSON object, e.g. `{"notify_with_email": 1, "redirect": "/thanks.php"}`.
+
+**Message body** (`ccenter_message.body`), self-describing so history survives schema edits:
+```json
+{"version": 1, "fields": [
+  {"key": "Your name", "label": "Your name", "type": "text", "value": "Jan", "display": "Jan"},
+  {"key": "Topics", "label": "Topics", "type": "checkbox",
+   "value": ["a", "b"], "display": "Site contents, Others"},
+  {"key": "CV", "label": "CV", "type": "file", "value": {"file": "cv.pdf"}}
+]}
+```
+- `value` is the raw submitted value (string | array | `{"file": name}`), `display` the text shown/mailed/exported.
+- Legacy bodies are converted to `{"key": legacyName, "label": legacyName, "type": null,
+  "value": text, "display": text, "legacy": true}` because the old format only kept display text.
+- Encode with `JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR` so SQL `LIKE`
+  search in message admin keeps working on readable text.
+
+**Access in IPF**: IPF has no JSON data type (`XOBJ_DTYPE_ARRAY` is PHP `serialize`, which we explicitly avoid).
+Columns are declared as `XOBJ_DTYPE_TXTAREA` (raw access, `'n'` format) and the object exposes
+typed accessors (`getSchema()`, `setSchema()`, `getFields()`) built on a small `mod_ccenter_Json` helper.
+Risk: IPF sanitizing must not mangle JSON (quotes/HTML entities) → covered by round-trip tests.
+
+**Compatibility**: readers detect the format by first non-space character (`{`/`[` → JSON, else legacy)
+and always read both. Writers always write JSON. The DSL parser stays as `FormDefinitionImporter`
+(import in admin, one-time migration) and `FormDefinitionExporter` (export legacy DSL = rollback path).
+CSV export of messages (`export.php`) is an *export* format and stays CSV.
 
 ### D3. Database access
 Handlers receive the connection from `icms_getModuleHandler()`. Module code never touches
@@ -72,7 +118,7 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
 
 ## Risks / Trade-offs
 - IPF deprecations originating in core (D5) → documented in the release notes; no core change.
-- Permission migration is the only data change → idempotent and reversible.
+- Data changes are the permission migration (D4) and JSON conversion (D2) → idempotent; legacy readers stay in place; DSL exporter is the rollback path for schemas.
 - Procedural helper removal breaks third-party code calling them → documented in release notes.
 - PHP 4 constructors never ran on PHP 8: restored behaviour may differ from what users
   currently see; verify against historical behaviour (list sorting, breadcrumbs).

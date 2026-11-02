@@ -21,8 +21,11 @@ The module is a half-finished port of a XOOPS-era code base:
   (one-time, reversible migration).
 - Replace `MyPageNav`, `MyFormSelect`, `XoopsBreadcrumbs`, `mymenu.php`, `admin_header.php`
   with core classes (`icms_view_PageNav`, `icms_view_Breadcrumb`, standard admin menu).
-- Move form-definition DSL, mailing, attachments and status logic out of `functions.php`
-  into testable classes; keep their behaviour and the stored `body` format.
+- Move form-definition parsing, mailing, attachments and status logic out of `functions.php`
+  into testable classes; keep their behaviour.
+- **Replace the three ad-hoc text formats with JSON** (stored in the existing text columns):
+  form schema (`defs`, now CSV-like DSL), option variables (`optvars`, `key=value`) and message
+  body (`body`, `name: value` lines). The legacy DSL stays available as import/export only.
 - Add CSRF protection to all state-changing requests.
 - Add a Docker-based test matrix (PHP 8.2/8.3/8.4 × ImpressCMS 2.0.4) and static analysis.
 - Release as module version 2.0.

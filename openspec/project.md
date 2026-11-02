@@ -47,7 +47,9 @@ accept, reply to, evaluate and close submissions.
 ## Important Constraints
 - Existing installations and data must keep working: database schema is **not** changed
   by the refactor (tables `ccenter_form`, `ccenter_message`, `ccenter_log`).
-- The serialized `body` format of stored messages stays backward compatible.
+- Persistence uses JSON (form schema, option variables, message body) in the **existing** text columns.
+  Legacy formats (CSV-like `defs`, `key=value` `optvars`, `name: value` `body`) remain readable
+  and are migrated; the column types do not change.
 - Must not depend on any API removed in ImpressCMS 2.0.4
   (`xoops_gethandler`, `icms_view_FormSelect`, MySQL (non-PDO) connection type, ...).
 
