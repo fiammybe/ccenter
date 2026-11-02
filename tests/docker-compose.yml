@@ -1,0 +1,28 @@
+# Test stack: ImpressCMS 2.0.4 + ccenter on a chosen PHP version.
+#   PHP_VERSION=8.3 WEB_PORT=8083 ICMS_WORKDIR=.work/8.3/htdocs docker compose -p ccenter-83 up -d
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: icms
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  web:
+    build:
+      context: ./docker
+      args:
+        PHP_VERSION: ${PHP_VERSION:-8.3}
+    image: ccenter-test:${PHP_VERSION:-8.3}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8083}:80"
+    volumes:
+      - ${ICMS_WORKDIR}:/var/www/html
+      - ${CCENTER_SRC:-..}:/var/www/html/modules/ccenter:ro
+      - ${ICMS_TRUST:-./.work/trust}:/var/www/trust

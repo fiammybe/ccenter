@@ -1,0 +1,4 @@
+vendor/
+tools/phpstan.phar
+composer.lock
+.phpunit.result.cache

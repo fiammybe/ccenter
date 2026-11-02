@@ -1,0 +1,25 @@
+# Static analysis of the module against an ImpressCMS 2.0.4 checkout.
+#   ICMS_HTDOCS=/path/to/impresscms/htdocs php tools/phpstan.phar analyse
+parameters:
+    level: 1
+    phpVersion: 80200
+    paths:
+        - .
+    excludePaths:
+        - vendor
+        - tools
+        - tests
+        - language
+    scanDirectories:
+        - %env.ICMS_HTDOCS%/libraries
+        - %env.ICMS_HTDOCS%/include
+    scanFiles:
+        - %env.ICMS_HTDOCS%/mainfile.php
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # entry scripts include the ImpressCMS bootstrap by a relative path that only resolves inside htdocs/modules
+        - '#Path in include(_once)?\(\) "(\.\./)+(mainfile|include/cp_header)\.php" is not a file#'
+        # Core and smarty globals defined by ImpressCMS at runtime
+        - '#Variable \$(xoopsTpl|xoopsOption|icmsConfig|icmsAdminTpl|xoTheme|msgs|msg_status|export_range) might not be defined#'
+        - '#Constant (_[A-Z0-9_]+|ICMS_[A-Z_]+|XOOPS_[A-Z_]+|FORMS|CCMES|CCLOG|LOG|MSG|FORM) not found#'
