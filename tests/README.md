@@ -38,6 +38,13 @@ notice or deprecation. To make that possible the test stack differs from a produ
 Template files are stored in the database; after changing a template run the module update
 (the smoke suite does this first) before judging results.
 
+## Data tests and the upgrade test
+* `tests/e2e/data.test.js` (run together with the smoke tests by `npm test`) covers how forms, options and messages are
+  stored as JSON, the migration of data written by earlier versions, the delete cascade and the file download.
+* `OLD_REF=<commit> ICMS_SRC=... tests/upgrade-test.sh 8.3` installs the module as it was at `OLD_REF`, creates a form and
+  messages with that code, switches to the code in the working tree, runs the module update and checks that everything is
+  converted, still shows the same and that a second update changes nothing. Use the phase 1 commit (`beab8da`) or a release tag.
+
 ## Unit tests
 `tests/unit` pins the behaviour of the legacy text formats (CSV-like form definitions, `key=value`
 option variables, `name: value` message bodies) using fixtures in `tests/unit/fixtures`.

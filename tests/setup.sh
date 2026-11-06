@@ -12,7 +12,7 @@ PORT="${WEB_PORT:-808${V#8.}}"
 PROJECT="ccenter-${V//./}"
 WORK="$HERE/.work/$V"
 
-export PHP_VERSION="$V" WEB_PORT="$PORT" ICMS_WORKDIR="$WORK/htdocs" ICMS_TRUST="$WORK/trust" CCENTER_SRC="$HERE/.."
+export PHP_VERSION="$V" WEB_PORT="$PORT" ICMS_WORKDIR="$WORK/htdocs" ICMS_TRUST="$WORK/trust" CCENTER_SRC="${CCENTER_SRC:-$HERE/..}"
 
 docker compose -f "$HERE/docker-compose.yml" -p "$PROJECT" down -v --remove-orphans >/dev/null 2>&1 || true
 rm -rf "$WORK"; mkdir -p "$WORK/htdocs" "$WORK/trust"

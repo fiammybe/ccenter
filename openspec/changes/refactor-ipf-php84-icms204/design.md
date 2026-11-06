@@ -151,3 +151,5 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
   message itself and in the CSV export either way.
 - **Security fixes made on the way:** `file.php` accepted path elements in the file name (path traversal) and served any file type inline;
   "take over message" (`status.php op=myself`) did not check the contact group; free text typed after "other" was shown unescaped.
+- **Visible differences after the conversion:** a submitted message no longer shows the "required" mark behind the labels; it shows
+  the label stored with the message. The upgrade test checks everything else is identical.
