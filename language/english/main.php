@@ -13,6 +13,7 @@ define('_MD_SUBMIT_SEND','Submit this');
 define('_MD_SUBMIT_EDIT','Edit Again');
 define('_MD_SUBMIT_VIEW','Refresh');
 
+define('_MD_TOKEN_ERR', 'The form has expired or was not sent from this site. Please check your input and send it again.');
 define('_MD_REQUIRE_MARK', '<em>*</em>');
 define('_MD_ORDER_NOTE', _MD_REQUIRE_MARK.' is required');
 define('_MD_REQUIRE_ERR', 'Need this field input');

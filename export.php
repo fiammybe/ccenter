@@ -11,72 +11,41 @@ if (!is_object(icms::$user)) {
 
 $id = isset($_GET['form']) ? (int) $_GET['form'] : 0;
 
-$cond = 'formid='.$id;
-if (!icms::$user->isAdmin(icms::$module->getVar('mid'))) {
-    $cond .= ' AND (priuid='.icms::$user->getVar('uid').
-	' OR cgroup IN ('.join(',', icms::$user->getGroups()).'))';
-}
-
-$res = icms::$xoopsDB->query("SELECT formid,defs FROM ".FORMS." WHERE $cond");
-
-if (!$res || icms::$xoopsDB->getRowsNum($res)==0) {
+$form_obj = $id ? icms_getModuleHandler('form', 'ccenter')->find($id) : null;
+if (!$form_obj || !mod_ccenter_AccessPolicy::forCurrentUser()->handlesForm($form_obj->toRow())) {
     $back = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : "index.php";
     redirect_header($back, 3, _NOPERM);
+    exit;
 }
-$form = icms::$xoopsDB->fetchArray($res);
+$form = $form_obj->toRow();
 
-$cond = "fidref=$id AND status<>".icms::$xoopsDB->quoteString(_STATUS_DEL);
-$range = isset($_GET['range']) ? icms_core_DataFilter::stripSlashesGPC($_GET['range']) : "";
-switch ($range) {
-case 'm0':
-    // start this month
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, $ym[1], 1, $ym[0]));
-    $cond .= " AND ctime>$stime";
-    break;
-case 'm1':
-    // last month
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, $ym[1]-1, 1, $ym[0]));
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $ltime = userTimeToServerTime(mktime(0, 0, 0, $ym[1], 1, $ym[0])-1);
-    $cond .= " AND ctime BETWEEN $stime AND $ltime";
-    break;
-case 'y0':
-    // start this year
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, 1, 1, $ym[0]));
-    $cond .= " AND ctime>$stime";
-    break;
-case 'y1':
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, 1, 1, $ym[0]-1));
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $ltime = userTimeToServerTime(mktime(0, 0, 0, 1, 1, $ym[0])-1);
-    $cond .= " AND ctime BETWEEN $stime AND $ltime";
-    break;
-default:
+$range = isset($_GET['range']) ? (string) icms_core_DataFilter::stripSlashesGPC($_GET['range']) : "";
+if (!in_array($range, array('m0', 'm1', 'y0', 'y1'), true)) {
     $range = "all";
-    break;
 }
-
-$res = icms::$xoopsDB->query('SELECT * FROM '.CCMES." WHERE $cond ORDER BY msgid");
+// months and years follow the clock of the person who exports
+$offset = (int) date('Z') - userTimeToServerTime(0);	// server time zone plus the difference to the visitor's
+$messages = icms_getModuleHandler('message', 'ccenter')->getForExport($id, $range, $offset);
 
 $items = get_form_attribute($form['defs']);
 $labels = array('ID', _MD_POSTDATE, _CC_STATUS, _MD_CONTACT_FROM, _MD_CONTACT_TO);
-$n = $mpos = -1;
-foreach ($items as $item) {
+$columns = array();	// key and type of every column of the form, in the order of the definition
+foreach ($items as $key => $item) {
     if (empty($item['label'])) continue;	// skip comment
-    $n++;
-    if ($mpos<0 && $item['type'] == 'mail') $mpos = $n;
+    $columns[] = array('key' => $key, 'type' => $item['type']);
     $labels[] = $item['label'];
 }
 
 $contents = strip_tags(csv_str($labels))."\n";
-while ($data = icms::$xoopsDB->fetchArray($res)) {
-    $values = unserialize_text($data['body']);
-    if ($mpos>=0) {
-	array_splice($values, $mpos, 0, array($data['email']));
+foreach ($messages as $message) {
+    $data = $message->toRow();
+    $stored = mod_ccenter_MessageBody::fromStored($data['body'])->toLegacyArray();
+    $values = array();
+    foreach ($columns as $column) {
+	$value = isset($stored[$column['key']]) ? $stored[$column['key']] : '';
+	// an address that is not stored in the body is kept in the message itself
+	if ($value === '' && $column['type'] == 'mail') $value = $data['email'];
+	$values[] = $value;
     }
     $fixval = array($data['msgid'], formatTimestamp($data['mtime']),
 		    $msg_status[$data['status']],

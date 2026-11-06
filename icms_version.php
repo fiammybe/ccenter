@@ -21,6 +21,8 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA //
 //  ------------------------------------------------------------------------ //
 
+require_once dirname(__FILE__) . '/class/autoload.php';
+
 $modversion = array('name'			=> _MI_CCENTER_NAME,
 					'version'		=> "1.0",
 					'description'	=> _MI_CCENTER_DESC,
@@ -63,8 +65,8 @@ $modversion['adminmenu'] = "admin/menu.php";
 
 // Menu
 $modversion['hasMain'] = 1;
-global $icmsUser;
-if (!empty($icmsUser)) {
+
+if (is_object(icms::$user)) {
     $modversion['sub'][] = array(
 									'name'	=> _MI_CCENTER_MYCONTACT,
 									'url'	=> "list.php"
@@ -115,6 +117,10 @@ $modversion['templates'][] = array(
 $modversion['templates'][] = array(
 									'file'			=> 'ccenter_form_widgets.html',
 									'description'	=> _MI_CCENTER_WIDGET_TPL
+								);
+$modversion['templates'][] = array(
+									'file'			=> 'ccenter_admin_table.html',
+									'description'	=> defined('_MI_CCENTER_ADMTABLE_TPL') ? _MI_CCENTER_ADMTABLE_TPL : 'Table of the administration'
 								);
 
 // Blocks
@@ -167,7 +173,7 @@ $modversion['config'][] = array(
 								'description'	=> '_MI_CCENTER_DEF_ATTRS_DESC',
 								'formtype'		=> 'textarea',
 								'valuetype'		=> 'text',
-								'default'		=> "size=60\nrows=5\ncols=50\nnotify_with_email=0"
+								'default'		=> '{"size":60,"rows":5,"cols":50,"notify_with_email":0}'
 							);
 $modversion['config'][] = array(
 								'name'			=> 'status_combo',

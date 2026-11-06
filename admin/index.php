@@ -1,662 +1,167 @@
 <?php
-// adminstration messages
+// administration of the contact forms
 include "../../../include/cp_header.php";
 include "../functions.php";
-include_once "myformselect.php";
 
-// option variables form definitions
-define(
-    "_CC_OPTDEFS",
-    "notify_with_email,radio,1=" .
-        _YES .
-        ",=" .
-        _NO .
-        "
-redirect,text,size=60
-reply_comment,textarea,cols=60,rows=10
-reply_use_comtpl,radio,1=" .
-        _YES .
-        ",=" .
-        _NO .
-        "
-others,textarea",
-);
-icms_cp_header();
-$op = isset($_GET["op"])
-    ? filter_input(INPUT_GET, "op", FILTER_SANITIZE_STRING)
-    : "";
-if (isset($_POST["op"])) {
-    $op = filter_input(INPUT_POST, "op", FILTER_SANITIZE_STRING);
+$handler = icms_getModuleHandler("form", "ccenter");
+$is_post = $_SERVER["REQUEST_METHOD"] === "POST";
+$op = (string) preg_replace("/[^A-Za-z_]/", "", (string) ($_REQUEST["op"] ?? ""));
+if ($op === "delete") {
+    $op = "del"; // links of the earlier version
 }
-$formid = isset($_REQUEST["formid"]) ? (int) $_REQUEST["formid"] : 0;
+$formid = (int) ($_REQUEST["formid"] ?? 0);
 
-$fields = [
-    "title",
-    "description",
-    "defs",
-    "priuid",
-    "cgroup",
-    "store",
-    "custom",
-    "weight",
-    "active",
-];
-$optfields = [];
-if ($op == "delform") {
-    $formid = filter_input(INPUT_POST, "formid", FILTER_SANITIZE_NUMBER_INT);
-    icms::$db->query("DELETE FROM " . FORMS . " WHERE formid=" . $formid);
-    icms::$db->query("DELETE FROM " . CCMES . " WHERE fidref=" . $formid);
-    // NOTE: add function delete ICMS comments.
-    // NOTE: add function delete uploads files
-    // NOTE: add function delete notifications
+// ---- changes: POST requests with a valid security token only ----
+if ($is_post && $op === "del" && !empty($_POST["confirm"])) {
+    if (!cc_check_token()) {
+        redirect_header("index.php", 3, cc_token_error());
+        exit();
+    }
+    // removes the form with its messages, their attachments, comments and notification subscriptions
+    $handler->deleteWithMessages($formid);
     redirect_header("index.php", 1, _AM_FORM_DELETED);
     exit();
-} elseif (isset($_POST["formdefs"]) && !isset($_POST["preview"])) {
-    $formid = filter_input(INPUT_POST, "formid", FILTER_SANITIZE_NUMBER_INT);
-    $data = $vals = [];
-    foreach ($fields as $fname) {
-        $data[$fname] = $v = icms_core_DataFilter::stripSlashesGPC(
-            $_POST[$fname],
-        );
-        $v = icms::$db->quoteString($v);
-        if ($formid) {
-            $vals[] = $fname . "=" . $v;
-        } else {
-            $vals[$fname] = $v;
-        }
-    }
-    $v = icms::$db->quoteString($data["optvars"] = post_optvars());
-    $fname = "optvars";
-    if ($formid) {
-        $vals[] = $fname . "=" . $v;
-    } else {
-        $vals[$fname] = $v;
-    }
-    $v = "|";
-    foreach ($_POST["grpperm"] as $gid) {
-        $v .= intval($gid) . "|";
-    }
-    $v = icms::$db->quoteString($v);
-    if ($formid) {
-        $vals[] = "grpperm=" . $v;
-        $vals[] = "mtime=" . time();
-        $res = icms::$db->query(
-            "UPDATE " .
-                FORMS .
-                " SET " .
-                join(",", $vals) .
-                " WHERE formid=" .
-                $formid,
-        );
-    } else {
-        $vals["grpperm"] = $v;
-        $vals["mtime"] = time();
-        $res = icms::$db->query(
-            "INSERT INTO " .
-                FORMS .
-                "(" .
-                join(",", array_keys($vals)) .
-                ") VALUES(" .
-                join(",", $vals) .
-                ")",
-        );
-        $formid = icms::$db->getInsertID();
-    }
-    if (check_form_tags($data["custom"], $data["defs"], $data["description"])) {
-        $redirect = "index.php?formid=" . $formid;
-    } else {
-        $redirect = "index.php";
-    }
-    if ($res) {
-        redirect_header($redirect, 1, _AM_FORM_UPDATED);
-    } else {
-        redirect_header($redirect, 3, _AM_FORM_UPDATE_FAIL);
-    }
-    exit();
 }
 
-if (!empty($_GET["lib"])) {
-    global $mydirpath;
-    $mydirpath = dirname(dirname(__FILE__));
-    $mydirname = basename($mydirpath);
-    // common libs (eg. altsys)
-    $lib = preg_replace("/[^a-zA-Z0-9_-]/", "", $_GET["lib"]);
-    $page = preg_replace("/[^a-zA-Z0-9_-]/", "", @$_GET["page"]);
-
-    if (file_exists(ICMS_TRUST_PATH . "/libs/" . $lib . "/" . $page . ".php")) {
-        include ICMS_TRUST_PATH . "/libs/" . $lib . "/" . $page . ".php";
-    } elseif (file_exists(ICMS_TRUST_PATH . "/libs/" . $lib . "/index.php")) {
-        include ICMS_TRUST_PATH . "/libs/" . $lib . "/index.php";
-    } else {
-        die("wrong request");
+$editing = null;   // the form object shown in the editor
+$messages = "";
+$preview = false;
+if ($is_post && in_array($op, ["addform", "changedField"], true)) {
+    $editing = $formid ? $handler->get($formid) : $handler->create();
+    if (!$editing || $editing->isNew() !== ($formid === 0)) {
+        redirect_header("index.php", 3, _AM_NODATA);
+        exit();
     }
-    exit();
+    $controller = new mod_ccenter_Controller($handler);
+    if ($op === "changedField" || !empty($_POST["preview"])) {
+        // not stored: the typed values are shown again (with the new list of contact persons, or as preview)
+        $controller->postDataToObject($editing);
+        $preview = $op === "addform";
+    } elseif (!cc_check_token()) {
+        $controller->postDataToObject($editing);
+        $messages = cc_token_error();
+    } else {
+        $_POST["form_view"] = $_POST["form_view"] ?? [];   // IPF cannot handle "no group checked"
+        $obj = $controller->doStoreFromDefaultForm($editing, $formid, _AM_FORM_UPDATED, _AM_FORM_UPDATED, null);
+        if (!$obj->hasError()) {
+            $stored = (int) $obj->getVar("formid", "n");
+            $handler->syncLegacyColumn($stored);
+            $defs = $obj->definitionForEditing("lines");
+            $incomplete = check_form_tags((int) $obj->getVar("custom", "n"), $defs, (string) $obj->getVar("description", "n"));
+            redirect_header($incomplete ? "index.php?op=mod&formid=" . $stored : "index.php", 1, _AM_FORM_UPDATED);
+            exit();
+        }
+        $messages = trim(strip_tags(str_replace("<br />", "\n", $obj->getHtmlErrors())));
+        $editing = $obj;
+    }
 }
 
-icms::$module->displayAdminmenu(1);
+icms_cp_header();
+cc_display_admin_menu(1);
 
-switch ($op) {
-    case "delete":
-        $res = icms::$db->query(
-            "SELECT title FROM " . FORMS . " WHERE formid=" . $formid,
-        );
-        [$title] = icms::$db->fetchRow($res);
-        xoops_confirm(
-            ["op" => "delform", "formid" => $formid],
-            "",
-            _AM_DELETE_FORM .
-                " - " .
-                htmlspecialchars($title) .
-                " (ID:$formid)",
-            _DELETE,
-        );
-        break;
-    default:
-        if ($formid == 0) {
-            list_forms();
-        }
-        build_form($formid);
+if ($op === "del" && $formid) {
+    confirm_delete($handler, $formid);
+} elseif ($editing || $formid || in_array($op, ["mod", "edit", "clone"], true)) {
+    edit_form($handler, $editing, $formid, $op === "clone", $messages, $preview);
+} else {
+    list_forms($handler);
 }
 
 icms_cp_footer();
 
-function post_optvars()
+function confirm_delete($handler, $formid)
 {
-    $items = get_form_attribute(_CC_OPTDEFS, "", "optvar");
-    $errors = assign_post_values($items);
-    $vars = [];
-    foreach ($items as $item) {
-        $fname = $item["name"];
-        if ($fname == "others") {
-            foreach (unserialize_vars($item["value"]) as $k => $v) {
-                $vars[$k] = $v;
-            }
-        } else {
-            if ($item["value"]) {
-                $vars[$fname] = $item["value"];
-            }
-        }
+    $form = $handler->find($formid);
+    if (!$form) {
+        echo _AM_NODATA;
+        return;
     }
-    return serialize_text($vars);
+    icms_core_Message::confirm(
+        ["op" => "del", "formid" => $formid, "confirm" => 1],
+        "index.php",
+        _AM_DELETE_FORM . " - " . htmlspecialchars($form->getVar("title", "n")) . " (ID:$formid)",
+        _DELETE,
+    );
 }
 
-function list_forms()
+function list_forms($handler)
 {
-    //global $xoopsUser;
-    $dirname = basename(dirname(dirname(__FILE__)));
-    $res = icms::$db->query(
-        "SELECT formid,title,count(msgid) nmes,priuid,cgroup,
-sum(if(status='-',1,0)) nwait,
-sum(if(status='a',1,0)) nwork,
-sum(if(status='b',1,0)) nreply,
-sum(if(status='c',1,0)) nclose,
-store
-FROM " .
-            FORMS .
-            " LEFT JOIN " .
-            CCMES .
-            " ON fidref=formid AND status<>'x' GROUP BY formid",
-    );
-    if (!$res || icms::$db->getRowsNum($res) == 0) {
-        return false;
-    }
-    echo "<style>td.num { text-align: right; }</style>";
-    echo "<table class='outer' border='0' cellspacing='1'>\n";
-    echo "<tr><th>ID</th><th>" .
-        _AM_FORM_TITLE .
-        "</th><th>" .
-        _AM_FORM_PRIM_CONTACT .
-        "</th><th>" .
-        _AM_MSG_COUNT .
-        "</th><th>" .
-        _AM_MSG_WAIT .
-        "</th><th>" .
-        _AM_MSG_WORK .
-        "</th><th>" .
-        _AM_MSG_REPLY .
-        "</th><th>" .
-        _AM_MSG_CLOSE .
-        "</th><th>" .
-        _AM_OPERATION .
-        "</th></tr>\n";
-    $n = 0;
-    $mbase = ICMS_URL . "/modules/$dirname";
-    $ancfmt =
-        "<td class='num'><a href='msgadm.php?stat=%s&formid=%d'>%d</a></td>\n";
-    $nodata = "<td class='num'>--</td>";
-    $msgs = [
-        "- a b c" => "nmes",
-        "-" => "nwait",
-        "a" => "nwork",
-        "b" => "nreply",
-        "c" => "nclose",
-    ];
-    $member_handler = icms::handler("icms_member");
-    $groups = $member_handler->getGroupList(
-        new icms_db_criteria_Item("groupid", ICMS_GROUP_ANONYMOUS, "!="),
-    );
-    while ($data = icms::$db->fetchArray($res)) {
-        $id = $data["formid"];
-        $title = htmlspecialchars($data["title"]);
-        $url = "$mbase?form=$id";
-        $priuid = $data["priuid"];
-        $form = $url;
-
-        if ($priuid < 0) {
-            $form .= "&amp;uid=" . icms::$user->getVar("uid");
-            $contact = sprintf(_CC_FORM_PRIM_GROUP, $groups[-$priuid]);
-        } elseif ($priuid) {
-            $contact = icms_member_user_Handler::getUserLink($priuid);
-        } elseif ($form["cgroup"]) {
-            $contact = "[" . $groups[$data["cgroup"]] . "]";
-        } else {
-            $contact = _MD_CONTACT_NOTYET;
-        }
-
-        $bg = $n++ % 2 ? "even" : "odd";
-        $ope =
-            "<a href='?formid=$id'>" .
-            _EDIT .
-            "</a>" .
-            " | <a href='?op=delete&formid=$id'>" .
-            _DELETE .
-            "</a>" .
-            " | <a href='$mbase/reception.php?form=$id'>" .
-            _AM_DETAIL .
-            "</a>";
-        echo "<tr class='$bg'><td>$id</td>
-<td><a href='$form' target='preview'>$title</a></td>
-<td>$contact</td>";
-        foreach ($msgs as $stat => $name) {
-            $value = $data[$name];
-            if ($data["store"] == _DB_STORE_YES) {
-                $value = sprintf($ancfmt, urlencode($stat), $id, $value);
-            } else {
-                $value = $value
-                    ? sprintf($ancfmt, urlencode($stat), $id, $value)
-                    : $nodata;
-            }
-            echo $value;
-        }
-        echo "<td>$ope</td></tr>\n";
-    }
-    echo "</table><hr/>\n";
-    return true;
+    mod_ccenter_AdminTable::guardRequest("form", ["formid", "title", "weight", "active"]);
+    $table = new icms_ipf_view_Table($handler, false, ["edit", "delete"]);
+    $table->setCustomTemplate(mod_ccenter_AdminTable::TEMPLATE);
+    $table->setDefaultSort("weight");
+    $table->setDefaultOrder("ASC");
+    $table->addColumn(new icms_ipf_view_Column("formid", "right", 40, false, false, "ID"));
+    $table->addColumn(new icms_ipf_view_Column("title", "left", false, "getTitleLink", false, _AM_FORM_TITLE));
+    $table->addColumn(new icms_ipf_view_Column("priuid", "left", 160, "getContact", false, _AM_FORM_PRIM_CONTACT, false));
+    $table->addColumn(new icms_ipf_view_Column("count_all", "right", 50, "getCount", false, _AM_MSG_COUNT, false));
+    $table->addColumn(new icms_ipf_view_Column("count_wait", "right", 50, "getWaiting", false, _AM_MSG_WAIT, false));
+    $table->addColumn(new icms_ipf_view_Column("count_work", "right", 50, "getWorking", false, _AM_MSG_WORK, false));
+    $table->addColumn(new icms_ipf_view_Column("count_reply", "right", 50, "getReplied", false, _AM_MSG_REPLY, false));
+    $table->addColumn(new icms_ipf_view_Column("count_close", "right", 50, "getClosed", false, _AM_MSG_CLOSE, false));
+    $table->addColumn(new icms_ipf_view_Column("active", "center", 50, "getActiveMark", false, _AM_FORM_ACTIVE));
+    $table->addCustomAction("getMessagesLink");
+    $table->addCustomAction("getCloneLink");
+    $table->addIntroButton("addform", "index.php?op=mod", _AM_FORM_NEW);
+    $table->addQuickSearch(["title"], _SEARCH);
+    echo $table->fetch();
 }
 
-function build_form($formid = 0)
+/**
+ * The form for creating, changing or copying a contact form: the IPF form of the object.
+ *
+ * @param mod_ccenter_FormHandler $handler
+ * @param mod_ccenter_Form|null   $obj      the object with the values to show (null: load it)
+ */
+function edit_form($handler, $obj, $formid, $clone, $messages, $preview)
 {
-    global $fields, $icmsConfig, $xoopsTpl;
-    include_once dirname(dirname(__FILE__)) .
-        "/language/" .
-        $icmsConfig["language"] .
-        "/main.php";
-
-    if (isset($_POST["formid"])) {
-        $data = [];
-        $fields[] = "priuid";
-        $fields[] = "cgroup";
-        foreach ($fields as $name) {
-            $data[$name] = icms_core_DataFilter::stripSlashesGPC($_POST[$name]);
+    global $xoopsTpl;
+    if ($obj === null) {
+        $source = $formid ? $handler->get($formid) : null;
+        if ($formid && !$source) {
+            echo _AM_NODATA;
+            return;
         }
-        $data["optvars"] = post_optvars();
-        $data["grpperm"] = $_POST["grpperm"];
-        $formid = intval($_POST["formid"]);
-        // form preview
-        get_attr_value($data["optvars"]); // set default values
-        $items = get_form_attribute($data["defs"]);
-        assign_form_widgets($items);
-        if ($_POST["preview"]) {
-            echo "<h2>" .
-                _PREVIEW .
-                " : " .
-                htmlspecialchars($data["title"]) .
-                "</h2>\n";
-            echo "<div class='preview'>\n";
+        if ($clone) {
+            $obj = $handler->copyOf($source);
+            $obj->setVar("formid", 0);
+            $handler->defaultGroups = $handler->getAllowedGroups($formid);
+        } else {
+            $obj = $source ?: $handler->create();
+        }
+    }
+    if ($messages !== "") {
+        echo '<div class="errorMsg">' . nl2br(htmlspecialchars($messages)) . "</div>\n";
+    }
+
+    if ($preview) {
+        $defs = $obj->definitionForEditing("lines");
+        if (cc_definition_valid($defs)) {
+            $data = $obj->toRow();
+            $data["optvars"] = (string) $obj->getVar("optvars", "n");
+            get_attr_value($data["optvars"]); // set default values
+            $items = get_form_attribute($defs);
+            assign_form_widgets($items);
+            echo "<h2>" . _PREVIEW . " : " . htmlspecialchars($obj->getVar("title", "n")) . "</h2>\n<div class='preview'>\n";
             $data["action"] = "";
             $data["check_script"] = "";
             $data["items"] = &$items;
             if (empty($xoopsTpl)) {
                 $xoopsTpl = new icms_view_Tpl();
             }
+            $xoopsTpl->assign("errors", []);
             $out = $xoopsTpl->fetch("db:" . render_form($data, "form"));
-            echo preg_replace(
-                '/type=["\']submit["\']/',
-                'type="submit" disabled="disabled"',
-                $out,
-            );
+            echo preg_replace('/type=["\']submit["\']/', 'type="submit" disabled="disabled"', $out);
             echo "</div>\n<hr size='5'/>\n";
         }
-    } elseif ($formid) {
-        $res = icms::$db->query(
-            "SELECT * FROM " . FORMS . " WHERE formid=$formid",
-        );
-        $data = icms::$db->fetchArray($res);
-        $data["grpperm"] = explode("|", trim($data["grpperm"], "|"));
-    } else {
-        $data = [
-            "title" => "",
-            "description" => "",
-            "defs" => "",
-            "store" => 1,
-            "custom" => 0,
-            "weight" => 0,
-            "active" => 1,
-            "priuid" => icms::$user->getVar("uid"),
-            "cgroup" => ICMS_GROUP_ADMIN,
-            "optvars" => "",
-            "grpperm" => [ICMS_GROUP_USERS],
-        ];
     }
-    $form = new icms_form_Theme(
-        $formid ? _AM_FORM_EDIT : _AM_FORM_NEW,
-        "myform",
-        "index.php",
-    );
-    $form->addElement(new icms_form_elements_Hidden("formid", $formid));
-    $form->addElement(
-        new icms_form_elements_Text(
-            _AM_FORM_TITLE,
-            "title",
-            35,
-            80,
-            $data["title"],
-        ),
-        true,
-    );
-    if (!empty($data["mtime"])) {
-        $form->addElement(
-            new icms_form_elements_Label(
-                _AM_FORM_MTIME,
-                formatTimestamp($data["mtime"]),
-            ),
-        );
-    }
-    $desc = new icms_form_elements_Tray(_AM_FORM_DESCRIPTION, "<br/>");
-    $description = $data["description"];
-    $editor = get_attr_value(null, "use_fckeditor");
-    if ($editor) {
-        $desc->addElement(
-            new icms_form_elements_TextArea(
-                "",
-                "description",
-                $description,
-                10,
-                60,
-            ),
-        );
-    } else {
-        $desc->addElement(
-            new icms_form_elements_Dhtmltextarea(
-                "",
-                "description",
-                $description,
-                10,
-                60,
-            ),
-        );
-    }
-    if (!$editor) {
-        $button = new icms_form_elements_Button(
-            "",
-            "ins_tpl",
-            _AM_INS_TEMPLATE,
-        );
-        $button->setExtra(
-            "onClick=\"myform.description.value += defsToString();\"",
-        );
-        $desc->addElement($button);
-    }
-    $error = check_form_tags($data["custom"], $data["defs"], $description);
-    if ($error) {
-        $desc->addElement(
-            new icms_form_elements_Label(
-                "",
-                "<div style='color:red;'>$error</div>",
-            ),
-        );
-    }
-    $form->addElement($desc);
-    $custom = new icms_form_elements_Select(
-        _AM_FORM_CUSTOM,
-        "custom",
-        $data["custom"],
-    );
-    $custom->setExtra(
-        ' onChange="myform.ins_tpl.disabled = (this.value==0||this.value==4);"',
-    );
-    $custom_type = unserialize_vars(_AM_CUSTOM_DESCRIPTION);
-    if ($editor) {
-        unset($custom_type[0]);
-    }
-    $custom->addOptionArray($custom_type);
-    $form->addElement($custom);
-    $grpperm = new icms_form_elements_select_Group(
-        _AM_FORM_ACCEPT_GROUPS,
-        "grpperm",
-        true,
-        $data["grpperm"],
-        4,
-        true,
-    );
-    $grpperm->setDescription(_AM_FORM_ACCEPT_GROUPS_DESC);
-    $form->addElement($grpperm);
-    $defs_tray = new icms_form_elements_Tray(_AM_FORM_DEFS);
-    $defs_tray->addElement(
-        new icms_form_elements_TextArea("", "defs", $data["defs"], 10, 60),
-    );
-    $defs_tray->addElement(
-        new icms_form_elements_Label(
-            "",
-            '<div id="itemhelper" style="display:none; white-space:nowrap;">
-  ' .
-                _AM_FORM_LAB .
-                ' <input name="xelab" size="10">
-  <input type="checkbox" name="xereq" title="' .
-                _AM_FORM_REQ .
-                '">
-  <select name="xetype">
-    <option value="text">text</option>
-    <option value="checkbox">checkbox</option>
-    <option value="radio">radio</option>
-    <option value="textarea">textarea</option>
-    <option value="select">select</option>
-    <option value="const">const</option>
-    <option value="hidden">hidden</option>
-    <option value="mail">mail</option>
-    <option value="file">file</option>
-  </select>
-  <input name="xeopt" size="30" />
-  <button onClick="return addFieldItem();">' .
-                _AM_FORM_ADD .
-                '</button>
-</div>',
-        ),
-    );
-    $defs_tray->setDescription(_AM_FORM_DEFS_DESC);
-    $form->addElement($defs_tray);
 
-    $member_handler = icms::handler("icms_member");
-    $groups = $member_handler->getGroupList(
-        new icms_db_criteria_Item("groupid", ICMS_GROUP_ANONYMOUS, "!="),
-    );
-    $groups = $member_handler->getGroupList(
-        new icms_db_criteria_Item("groupid", ICMS_GROUP_ANONYMOUS, "!="),
-    );
-    $options = [];
-    foreach ($groups as $k => $v) {
-        $options[-$k] = sprintf(_CC_FORM_PRIM_GROUP, $v);
+    $caption = $obj->isNew() ? _AM_FORM_NEW : _AM_FORM_EDIT;
+    if (!$obj->isNew() && (int) $obj->getVar("mtime", "n")) {
+        $caption .= " (" . formatTimestamp((int) $obj->getVar("mtime", "n"), "m") . ")";
     }
-    $options[0] = _AM_FORM_PRIM_NONE;
-
-    //$priuid = new MyFormSelect(_AM_FORM_PRIM_CONTACT, 'priuid', $data['priuid']);
-    //$priuid->addOptionArray($options);
-    //$priuid->addOptionUsers($data['cgroup']);
-    $priuid->setDescription(_AM_FORM_PRIM_DESC);
-    $form->addElement($priuid);
-
-    $cgroup = new icms_form_elements_Select("", "cgroup", $data["cgroup"]);
-    $cgroup->setExtra(' onChange="setSelectUID(\'priuid\', 0);"');
-    $cgroup->addOption(0, _AM_FORM_CGROUP_NONE);
-    $groups = $member_handler->getGroupList(
-        new icms_db_criteria_Item("groupid", ICMS_GROUP_ANONYMOUS, "!="),
-    );
-    $cgroup->addOptionArray($groups);
-
-    $cgroup_tray = new icms_form_elements_Tray(_AM_FORM_CONTACT_GROUP);
-    $cgroup_tray->addElement($cgroup);
-    $cgroup_tray->addElement(
-        new icms_form_elements_Label(
-            "",
-            '<noscript><input type="submit" name="chggrp" id="chggrp" value="' .
-                _AM_CHANGE .
-                '"/></noscript>',
-        ),
-    );
-
-    $form->addElement($cgroup_tray);
-
-    $store = new icms_form_elements_Select(
-        _AM_FORM_STORE,
-        "store",
-        $data["store"],
-    );
-    $store->addOptionArray(unserialize_vars(_CC_STORE_MODE, 1));
-    $form->addElement($store);
-    $form->addElement(
-        new icms_form_elements_Radioyn(
-            _AM_FORM_ACTIVE,
-            "active",
-            $data["active"],
-        ),
-    );
-
-    $form->addElement(
-        new icms_form_elements_Text(
-            _AM_FORM_WEIGHT,
-            "weight",
-            2,
-            8,
-            $data["weight"],
-        ),
-    );
-    $items = get_form_attribute(_CC_OPTDEFS, _AM_OPTVARS_LABEL, "optvar");
-    $vars = unserialize_vars($data["optvars"]);
-    $others = "";
-    foreach ($items as $k => $item) {
-        $name = $item["name"];
-        if (isset($vars[$name])) {
-            $items[$k]["default"] = $vars[$name];
-            unset($vars[$name]);
-        }
-    }
-    $val = "";
-    foreach ($vars as $i => $v) {
-        $val .= "$i=$v\n";
-    }
-    $items[$k]["default"] = $val;
-    assign_form_widgets($items);
-    $varform = "";
-    foreach ($items as $item) {
-        $br = $item["type"] == "textarea" ? "<br/>" : "";
-        $varform .=
-            "<div>" . $item["label"] . ": $br" . $item["input"] . "</div>";
-    }
-    $ck = empty($data["optvars"]) ? "" : " checked='checked'";
-    $optvars = new icms_form_elements_Label(
-        _AM_FORM_OPTIONS,
-        "<script type='text/javascript'>document.write(\"<input type='checkbox' id='optshow' onChange='toggle(this);'$ck/> " .
-            _AM_OPTVARS_SHOW .
-            "\");</script><div id='optvars'>$varform</div>",
-    );
-    $form->addElement($optvars);
-    $submit = new icms_form_elements_Tray("");
-    $submit->addElement(
-        new icms_form_elements_Button("", "formdefs", _SUBMIT, "submit"),
-    );
-    $submit->addElement(
-        new icms_form_elements_Button("", "preview", _PREVIEW, "submit"),
-    );
-    $form->addElement($submit);
-
+    $form = $obj->getSecureForm($caption, "addform", "index.php");
+    $form->addCustomButton("preview", _PREVIEW);
     echo "<a name='form'></a>";
     $form->display();
-    if ($editor) {
-        $base = ICMS_URL . "/common/fckeditor";
-        global $xoopsTpl;
-        echo "<script type='text/javascript' src='$base/fckeditor.js'></script>\n";
-        $editor = "var ccFCKeditor = new FCKeditor('description', '100%', '350', '$editor');
-ccFCKeditor.BasePath = '$base/';
-ccFCKeditor.ReplaceTextarea();";
-    }
-    echo '<script language="JavaScript">' .
-        $priuid->renderSupportJS(false) .
-        '
-// display only JavaScript enable
-xoopsGetElementById("itemhelper").style.display = "block";
-' .
-        $editor .
-        '
-function toggle(a) {
-    xoopsGetElementById("optvars").style.display = a.checked?"block":"none";
 }
-toggle(xoopsGetElementById("optshow"));
-
-function addFieldItem() {
-    var myform = window.document.myform;
-    var item=myform.xelab.value;
-    if (item == "") {
-	alert("' .
-        _AM_FORM_LABREQ .
-        '");
-	myform.xelab.focus();
-	return false;
-    }
-    if (myform.xereq.checked) item += "*";
-    var ty = myform.xetype.value;
-    var ov = myform.xeopt.value;
-    item += ","+ty;
-    if (ty != "text" && ty != "textarea" && ty != "file" && ty != "mail" && ov == "") {
-	alert(ty+": ' .
-        _AM_FORM_OPTREQ .
-        '");
-	myform.xeopt.focus();
-	return false;
-    }
-    if (ov != "") item += ","+ov;
-    opts = myform.defs;
-    if (opts.value!="" && !opts.value.match(/[\n\r]$/)) item = "\n"+item;
-    opts.value += item;
-    myform.xelab.value = ""; // clear old value
-    myform.xeopt.value = "";
-    return false; // always return false
-}
-function defsToString() {
-    value = window.document.myform.defs.value;
-    ret = "";
-    lines = value.split("\\n");
-    conf = "' .
-        _MD_CONF_LABEL .
-        '";
-    for (i in lines) {
-       lab = lines[i].replace(/,.*$/, "");
-       if (lab.match(/^\s*#/)) {
-           ret += "[desc]<div>"+lines[i].replace(/^\s*#/, "")+"</div>[/desc]\n";
-       } else if (lab != "") {
-           ret += "<div>"+lab+": {"+lab.replace(/\\*?$/,"")+"}</div>\n";
-           if (lines[i].match(/^[^,]+,\\s*mail/i)) {
-              lab = conf.replace(/%s/, lab);
-              ret += "[desc]<div>"+lab+": {"+lab.replace(/\\*?$/,"")+"}</div>[/desc]\n";
-           }
-       }
-    }
-    return "<form {FORM_ATTR}>\n"+ret+
-      "<p>{SUBMIT} {BACK}</p>\n</form>\n{CHECK_SCRIPT}";
-}
-
-fvalue = document.myform.custom.value;
-document.myform.ins_tpl.disabled = (fvalue==0 || fvalue==4);
-</script>
-';
-}
-?>

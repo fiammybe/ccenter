@@ -1,79 +1,52 @@
 <?php
-// show message list
-// $Id: list.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
-
+// the messages a visitor sent
 include "../../mainfile.php";
 include "functions.php";
-include_once ICMS_ROOT_PATH . "/class/pagenav.php";
-
-$xoopsOption["template_main"] = "ccenter_list.html";
-$uid = is_object(icms::$user) ? (int) icms::$user->getVar("uid") : 0;
 
 if (!is_object(icms::$user)) {
-	redirect_header(ICMS_URL . "/user.php", 3, _NOPERM);
+    redirect_header(ICMS_URL . "/user.php", 3, _NOPERM);
 }
 
+$xoopsOption["template_main"] = "ccenter_list.html";
 include ICMS_ROOT_PATH . "/header.php";
 
-// query from login user
-if (icms::$user->isAdmin(icms::$module->getVar("mid"))) {
-	if (isset($_GET["uid"])) {
-		$uid = intval($_GET["uid"]);
-	}
+// administrators may look at the messages of another user
+$uid = (int) icms::$user->getVar("uid");
+if (icms::$user->isAdmin(icms::$module->getVar("mid")) && isset($_GET["uid"])) {
+    $uid = (int) $_GET["uid"];
 }
 
 $labels = [
-	"mtime" => _MD_POSTDATE,
-	"formid" => _MD_CONTACT_FORM,
-	"touid" => _MD_CONTACT_FROM,
-	"status" => _CC_STATUS,
+    "mtime" => _MD_POSTDATE,
+    "formid" => _MD_CONTACT_FORM,
+    "touid" => _MD_CONTACT_FROM,
+    "status" => _CC_STATUS,
 ];
-$orders = [
-	"mtime" => "ASC",
-	"formid" => "ASC",
-	"touid" => "ASC",
-	"status" => "ASC",
-	"orders" => ["mtime"],
-];
+$state = mod_ccenter_ListState::forRequest("mylist", [
+    "mtime" => "ASC",
+    "formid" => "ASC",
+    "touid" => "ASC",
+    "status" => "ASC",
+    "orders" => ["mtime"],
+]);
+$formId = (int) ($_GET["form"] ?? 0);
+$handler = icms_getModuleHandler("message", "ccenter");
 
-$listctrl = new ListCtrl("mylist", $orders);
-
-$cond = " AND " . $listctrl->sqlcondition();
-
-if (isset($_GET["form"])) {
-	$cond .= " AND formid=" . intval($_GET["form"]);
-}
-
-$sqlx =
-	"FROM " . CCMES . " m," . FORMS . " WHERE uid=$uid $cond AND fidref=formid";
-
-$res = icms::$xoopsDB->query("SELECT count(msgid) $sqlx");
-[$total] = icms::$xoopsDB->fetchRow($res);
-$max = icms::$module->config["max_lists"];
-$start = isset($_GET["start"]) ? intval($_GET["start"]) : 0;
+$total = $handler->countListFor("uid", $uid, $state->statuses(), $formId);
+$max = (int) icms::$module->config["max_lists"];
+$start = max(0, (int) ($_GET["start"] ?? 0));
 
 $nav = new icms_view_PageNav($total, $max, $start, "start");
 $xoopsTpl->assign("pagenav", $total > $max ? $nav->renderNav() : "");
-$xoopsTpl->assign("statctrl", $listctrl->renderStat());
+$xoopsTpl->assign("statctrl", $state->renderStat());
 $xoopsTpl->assign("total", $total);
-$xoopsTpl->assign(
-	"xoops_pagetitle",
-	htmlspecialchars(icms::$module->getVar("name") . " - " . _MD_CCENTER_QUERY),
-);
-$xoopsTpl->assign("labels", $listctrl->getLabels($labels));
-
-$res = icms::$xoopsDB->query(
-	"SELECT m.*, title $sqlx " . $listctrl->sqlorder(),
-	$max,
-	$start,
-);
+$xoopsTpl->assign("xoops_pagetitle", htmlspecialchars(icms::$module->getVar("name") . " - " . _MD_CCENTER_QUERY));
+$xoopsTpl->assign("labels", $state->labels($labels));
 
 $list = [];
-
-while ($data = icms::$xoopsDB->fetchArray($res)) {
-	$list[] = cc_message_entry($data);
+foreach ($handler->listFor("uid", $uid, $state->statuses(), $formId, $state->orders(), $max, $start) as $row) {
+    $list[] = mod_ccenter_ListEntry::build($row);
 }
 $xoopsTpl->assign("list", $list);
 
 include ICMS_ROOT_PATH . "/footer.php";
-?>

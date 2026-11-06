@@ -1,0 +1,8 @@
+Your name: Jan Peeters
+Email: jan@example.com
+About: Query about us
+Topics: News, Forum
+Message: first line
+	second line
+	third line
+Upload: file=cv.pdf

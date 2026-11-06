@@ -1,0 +1,204 @@
+{
+    "0": {
+        "comment": " Contact details"
+    },
+    "Your name": {
+        "name": "Your name",
+        "label": "Your name*",
+        "field": "cc1",
+        "options": [],
+        "type": "text",
+        "comment": "",
+        "attr": {
+            "check": "require",
+            "size": "40",
+            "maxlength": 0
+        },
+        "default": ""
+    },
+    "Email": {
+        "name": "Email",
+        "label": "Email*",
+        "field": "cc2",
+        "options": [],
+        "type": "mail",
+        "comment": "",
+        "attr": {
+            "check": "require",
+            "size": "60",
+            "maxlength": 0
+        },
+        "default": ""
+    },
+    "Phone": {
+        "name": "Phone",
+        "label": "Phone",
+        "field": "cc3",
+        "options": [],
+        "type": "text",
+        "comment": "",
+        "attr": {
+            "check": "tel",
+            "size": "60",
+            "maxlength": 0
+        },
+        "default": ""
+    },
+    "About": {
+        "name": "About",
+        "label": "About*",
+        "field": "cc4",
+        "options": {
+            "Site contents": "Site contents",
+            "Query about us": "Query about us",
+            "Others": "Others"
+        },
+        "type": "radio",
+        "comment": "",
+        "attr": {
+            "check": "require",
+            "size": "60",
+            "maxlength": 0
+        },
+        "default": "Site contents"
+    },
+    "Topics": {
+        "name": "Topics",
+        "label": "Topics",
+        "field": "cc5",
+        "options": {
+            "News": "News",
+            "Forum": "Forum",
+            "Gallery": "Gallery",
+            "*": "*"
+        },
+        "type": "checkbox",
+        "comment": "",
+        "attr": {
+            "size": "60",
+            "maxlength": 0,
+            "check": ""
+        },
+        "default": [
+            "News"
+        ]
+    },
+    "Country": {
+        "name": "Country",
+        "label": "Country",
+        "field": "cc6",
+        "options": {
+            "Belgium": "Belgium",
+            "Netherlands": "Netherlands",
+            "Other": "Other"
+        },
+        "type": "select",
+        "comment": "",
+        "attr": {
+            "size": "60",
+            "maxlength": 0,
+            "check": ""
+        },
+        "default": "Belgium,Netherlands,Other"
+    },
+    "Label": {
+        "name": "Label",
+        "label": "Shown label",
+        "field": "cc7",
+        "options": [],
+        "type": "text",
+        "comment": "",
+        "attr": {
+            "maxlength": "20",
+            "size": "60",
+            "check": ""
+        },
+        "default": ""
+    },
+    "Quoted, name": {
+        "name": "Quoted, name",
+        "label": "Quoted, name",
+        "field": "cc8",
+        "options": [],
+        "type": "text",
+        "comment": "",
+        "attr": {
+            "size": "60",
+            "maxlength": 0,
+            "check": ""
+        },
+        "default": ""
+    },
+    "Message": {
+        "name": "Message",
+        "label": "Message",
+        "field": "cc9",
+        "options": [],
+        "type": "textarea",
+        "comment": "Please be precise",
+        "attr": {
+            "cols": "50",
+            "rows": "5",
+            "check": ""
+        },
+        "default": ""
+    },
+    "Upload": {
+        "name": "Upload",
+        "label": "Upload",
+        "field": "cc10",
+        "options": [],
+        "type": "file",
+        "comment": "",
+        "attr": {
+            "size": "60",
+            "maxlength": 0,
+            "check": ""
+        },
+        "default": ""
+    },
+    "Hidden id": {
+        "name": "Hidden id",
+        "label": "Hidden id",
+        "field": "cc11",
+        "options": {
+            "42": "42"
+        },
+        "type": "hidden",
+        "comment": "",
+        "attr": {
+            "size": "60",
+            "maxlength": 0,
+            "check": ""
+        },
+        "default": "42"
+    },
+    "Visit date": {
+        "name": "Visit date",
+        "label": "Visit date",
+        "field": "cc12",
+        "options": [],
+        "type": "date",
+        "comment": "",
+        "attr": {
+            "check": ""
+        },
+        "default": "2026-11-02"
+    },
+    "Greeting": {
+        "name": "Greeting",
+        "label": "Greeting",
+        "field": "cc13",
+        "options": {
+            "Hello {X_UNAME}": "Hello {X_UNAME}"
+        },
+        "type": "const",
+        "comment": "",
+        "attr": {
+            "size": "60",
+            "maxlength": 0,
+            "check": ""
+        },
+        "default": "Hello "
+    }
+}

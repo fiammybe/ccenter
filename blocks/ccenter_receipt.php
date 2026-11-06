@@ -14,26 +14,18 @@ include_once "$moddir/functions.php";
 function b_ccenter_receipt_show($options) {
     global $msg_status;
     if (!is_object(icms::$user)) return null;
-    $uid = icms::$user->getVar('uid');
+    $uid = (int) icms::$user->getVar('uid');
     $max = array_shift($options);
-    $order = array_shift($options);
-    foreach ($options as $v) {
-	$s[] = "'$v'";
-    }
-    $cond =  " AND status IN (".join(',', $s).")";
-    $order = $order=='asc'?'asc':'desc';
-    $res = icms::$xoopsDB->query("SELECT msgid, m.mtime, uid, status, title
-  FROM ".icms::$xoopsDB->prefix('ccenter_message')." m,
-    ".icms::$xoopsDB->prefix('ccenter_form')." WHERE (priuid=$uid OR priuid=0) $cond
-   AND fidref=formid ORDER BY status,m.mtime $order", $max);
-    if (!$res || icms::$xoopsDB->getRowsNum($res)==0) return null;
+    $order = array_shift($options) == 'asc' ? 'asc' : 'desc';
     $list = array();
-    while ($data = icms::$xoopsDB->fetchArray($res)) {
+    $labels = mod_ccenter_Status::labels();
+    foreach (icms_getModuleHandler('message', 'ccenter')->receiptFor($uid, $options, $order, (int) $max) as $data) {
 	$data['mdate'] = formatTimestamp($data['mtime'], _BL_CCENTER_DATE_FMT);
 	$data['uname'] = icms::$user->getUnameFromId($data['uid']);
-	$data['statstr'] = $msg_status[$data['status']];
+	$data['statstr'] = $labels[$data['status']] ?? '';
 	$list[] = $data;
     }
+    if (!$list) return null;
     $mydir = basename(dirname(__FILE__, 2));
     return array('list'=>$list, 'dirname'=>$mydir);
 }

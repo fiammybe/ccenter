@@ -36,11 +36,11 @@ function ccenter_com_approve(&$comment){
     global $icmsConfig;
 
     $msgid = $comment->getVar('com_itemid');
-    $res = icms::$xoopsDB->query("SELECT uid, touid, email, onepass, fidref, title, status FROM ".CCMES.", ".FORMS." WHERE msgid=$msgid AND formid=fidref");
+    $message_handler = icms_getModuleHandler('message', 'ccenter');
+    $data = $message_handler->getRowWithForm($msgid);
 
     $comid = $comment->getVar('com_id');
-    if ($res && icms::$xoopsDB->getRowsNum($res)) {
-	$data = icms::$xoopsDB->fetchArray($res);
+    if ($data) {
 	$email = $data['email'];
 	$s = $data['status'];
 
@@ -48,7 +48,7 @@ function ccenter_com_approve(&$comment){
 	$msg = _CC_LOG_COMMENT;
 	$status = ''; // new status
 	$now = time();
-	$values = array('mtime='.$now);
+	$values = array('mtime' => $now);
 	if ($uid && $uid == $data['touid']) { // comment by charge
 	    // status to replyed
 	    if ($s==_STATUS_ACCEPT) $status = _STATUS_REPLY;
@@ -56,14 +56,14 @@ function ccenter_com_approve(&$comment){
 	} elseif ($uid==0 || $uid==$data['uid']) { // comment by order person
 	    // status back to contacting
 	    if ($s==_STATUS_REPLY || $s==_STATUS_CLOSE) $status = _STATUS_ACCEPT;
-	    $values[] = 'atime='.$now;
+	    $values['atime'] = $now;
 	}
 	if ($status && $status != $s) {
 	    global $msg_status;
 	    $msg .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[$status]);
-	    $values[] = 'status='.icms::$xoopsDB->quoteString($status);
+	    $values['status'] = $status;
 	}
-	icms::$xoopsDB->query("UPDATE ".CCMES." SET ".join(',', $values)." WHERE msgid=$msgid");
+	$message_handler->updateFields($msgid, $values);
 	cc_log_message($data['fidref'], $msg." (comid=$comid)", $msgid);
 	// notification for guest contact
 	if (is_object(icms::$user) && $data['uid']==0 && $email) {
@@ -73,7 +73,7 @@ function ccenter_com_approve(&$comment){
 			  'X_ITEM_TYPE'=>'', 'X_ITEM_NAME'=>$subj,
 			  'X_COMMENT_URL'=>$url, 'FROM_EMAIL'=>$email,
 			  'SUBJECT'=>$subj);
-	    $xoopsMailer =& getMailer();
+	    $xoopsMailer = new icms_messaging_Handler();
 	    $xoopsMailer->useMail();
 	    $xoopsMailer->setFromEmail($icmsConfig['adminmail']);
 	    $xoopsMailer->setFromName(icms::$module->getVar('name'));

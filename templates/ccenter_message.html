@@ -15,6 +15,7 @@
 <{elseif $is_mine && isset($own_status[$data.status])}>
 <div class="attr">
   <form action="status.php" method="post">
+  <{$token}>
   <input type="hidden" name="id" value="<{$data.msgid}>" />
   <select name="status">
   <{foreach from=$own_status item=label key=val}>
@@ -31,6 +32,7 @@
 <div class="attr"><b class="label"><{$smarty.const._MD_CONTACT_TO}></b> <{$sendto}>
 <{if $is_getmine}>
 <form action="status.php" method="post" style="display: inline;">
+<{$token}>
 <input type="hidden" name="id" value="<{$data.msgid}>" />
 <input type="hidden" name="op" value="myself" />
 <input type="submit" value="<{$smarty.const._MD_CONTACT_MYSELF}>">
@@ -74,6 +76,7 @@
 <h4><{$smarty.const._MD_EVAL_VALUE}></h4>
 <p><{$smarty.const._MD_EVAL_DESC}></p>
 <form action="status.php" method="post">
+<{$token}>
 <style>
 table.evaluate { width: 20em; }
 table.evaluate td { width: 20%; text-align: center; }

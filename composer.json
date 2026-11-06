@@ -1,0 +1,27 @@
+{
+    "name": "fiammybe/ccenter",
+    "description": "Contact Center module for ImpressCMS",
+    "type": "project",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6 || ^10.5 || ^11.0",
+        "phpstan/phpstan": "^2.0",
+        "squizlabs/php_codesniffer": "^3.10",
+        "phpcompatibility/php-compatibility": "^9.3",
+        "dealerdirect/phpcodesniffer-composer-installer": "*"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "scripts": {
+        "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './tests/.work/*' -not -path './impresscms/*' -print0 | xargs -0 -n1 php -l",
+        "compat": "phpcs -p --standard=PHPCompatibility --runtime-set testVersion 8.2- --extensions=php --ignore=vendor,tests/.work,impresscms .",
+        "stan": "phpstan analyse --memory-limit=1G",
+        "test": "phpunit"
+    }
+}

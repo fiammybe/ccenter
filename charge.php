@@ -1,61 +1,53 @@
 <?php
-// show message list
-// $Id: charge.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
-
+// the messages a person is in charge of
 include "../../mainfile.php";
 include "functions.php";
-include_once ICMS_ROOT_PATH.'/class/pagenav.php';
-
-$xoopsOption['template_main'] = "ccenter_charge.html";
-$uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
 
 if (!is_object(icms::$user)) {
-    redirect_header(ICMS_URL.'/user.php', 3, _NOPERM);
+    redirect_header(ICMS_URL . "/user.php", 3, _NOPERM);
 }
 
-include ICMS_ROOT_PATH."/header.php";
+$xoopsOption["template_main"] = "ccenter_charge.html";
+include ICMS_ROOT_PATH . "/header.php";
 
-// query from login user
-if (icms::$user->isAdmin($icmsModule->getVar('mid'))) {
-    if (isset($_GET['touid'])) {
-		$uid = (int) $_GET['touid'];
-	}
+// administrators may look at the messages of another person in charge
+$uid = (int) icms::$user->getVar("uid");
+if (icms::$user->isAdmin(icms::$module->getVar("mid")) && isset($_GET["touid"])) {
+    $uid = (int) $_GET["touid"];
 }
 
-$labels=array('mtime'=>_MD_MODDATE, 'formid'=>_MD_CONTACT_FORM,
-	      'uid'=>_MD_CONTACT_FROM, 'status'=>_CC_STATUS);
-$orders=array('mtime'=>'ASC', 'formid'=>'ASC', 'uid'=>'ASC', 'status'=>'ASC',
-	      'stat'=>'- a', 'orders'=>array('status','mtime'));
+$labels = [
+    "mtime" => _MD_MODDATE,
+    "formid" => _MD_CONTACT_FORM,
+    "uid" => _MD_CONTACT_FROM,
+    "status" => _CC_STATUS,
+];
+$state = mod_ccenter_ListState::forRequest("charge", [
+    "mtime" => "ASC",
+    "formid" => "ASC",
+    "uid" => "ASC",
+    "status" => "ASC",
+    "stat" => "- a",
+    "orders" => ["status", "mtime"],
+]);
+$formId = (int) ($_GET["form"] ?? 0);
+$handler = icms_getModuleHandler("message", "ccenter");
 
-$listctrl = new ListCtrl('charge', $orders);
-
-$cond = " AND ".$listctrl->sqlcondition();
-
-if (isset($_GET['form'])) {
-    $cond .= " AND formid=".(int) $_GET['form'];
-}
-
-$sqlx = "FROM ".CCMES." m,".FORMS." WHERE touid=$uid $cond AND fidref = formid";
-
-$res = icms::$xoopsDB->query("SELECT count(msgid) $sqlx");
-list($total) = icms::$xoopsDB->fetchRow($res);
-
-$max = icms::$module->config['max_lists'];
-$start = isset($_GET['start']) ? (int) $_GET['start'] : 0;
+$total = $handler->countListFor("touid", $uid, $state->statuses(), $formId);
+$max = (int) icms::$module->config["max_lists"];
+$start = max(0, (int) ($_GET["start"] ?? 0));
 
 $nav = new icms_view_PageNav($total, $max, $start, "start");
-$xoopsTpl->assign('pagenav', $nav->renderNav());
-$xoopsTpl->assign('statctrl', $listctrl->renderStat());
-$xoopsTpl->assign('total', $total);
-$xoopsTpl->assign('xoops_pagetitle', htmlspecialchars(icms::$module->getVar('name')." - "._MD_CCENTER_CHARGE));
-$xoopsTpl->assign('labels', $listctrl->getLabels($labels));
+$xoopsTpl->assign("pagenav", $total > $max ? $nav->renderNav() : "");
+$xoopsTpl->assign("statctrl", $state->renderStat());
+$xoopsTpl->assign("total", $total);
+$xoopsTpl->assign("xoops_pagetitle", htmlspecialchars(icms::$module->getVar("name") . " - " . _MD_CCENTER_CHARGE));
+$xoopsTpl->assign("labels", $state->labels($labels));
 
-$res = icms::$xoopsDB->query("SELECT m.*, title $sqlx ".$listctrl->sqlorder(), $max, $start);
-
-$qlist = array();
-while ($data = icms::$xoopsDB->fetchArray($res)) {
-    $qlist[] = cc_message_entry($data);
+$qlist = [];
+foreach ($handler->listFor("touid", $uid, $state->statuses(), $formId, $state->orders(), $max, $start) as $row) {
+    $qlist[] = mod_ccenter_ListEntry::build($row);
 }
-$xoopsTpl->assign('qlist', $qlist);
+$xoopsTpl->assign("qlist", $qlist);
 
-include ICMS_ROOT_PATH."/footer.php";
+include ICMS_ROOT_PATH . "/footer.php";

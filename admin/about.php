@@ -17,6 +17,10 @@
  *
  */
 
-include_once "admin_header.php";
+include_once "../../../include/cp_header.php";
+include_once "../functions.php";
+icms_cp_header();
+cc_display_admin_menu(0);
 $aboutObj = new icms_ipf_About();
 $aboutObj->render();
+icms_cp_footer();
