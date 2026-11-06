@@ -30,4 +30,17 @@ class mod_ccenter_LogHandler extends icms_ipf_Handler
         ]);
         return (bool) $this->insert($log, true);
     }
+
+    /**
+     * History of one message, newest first.
+     *
+     * @return mod_ccenter_Log[]
+     */
+    public function forMessage($msgId)
+    {
+        $criteria = new icms_db_criteria_Compo(new icms_db_criteria_Item('midref', (int) $msgId));
+        $criteria->setSort('logid');
+        $criteria->setOrder('DESC');
+        return $this->getObjects($criteria);
+    }
 }

@@ -31,11 +31,11 @@
 - [x] 3.3 CSRF tokens on every POST that changes data (form posting, status/take over/evaluation, form administration, message administration); `status.php` accepts POST only. The only GET that changes something is the automatic "accepted" status when the person in charge opens a new message (kept on purpose)
 
 ## 4. Admin
-- [ ] 4.1 Form admin: `icms_ipf_view_Table` + `getForm()` + Controller (create/edit/clone/delete); schema edited as JSON with validation, plus "import legacy DSL" and "export legacy DSL"
-- [ ] 4.2 Message admin: table with filters, quick search, status actions, delete cascade
-- [ ] 4.3 Export (CSV) via handler
-- [ ] 4.4 Use core user/group-user element; delete `my*.php` and `admin_header.php`
-- [ ] 4.5 Help/About via core; standard admin menu
+- [x] 4.1 Form admin: list on `icms_ipf_view_Table` (counts per status, sorting, quick search, edit/clone/delete/messages), cloning, deleting with cascade, editor with lines or JSON (`?format=json`, both accepted on save, invalid input refused with a message). The edit page keeps core form elements instead of `getForm()`/`Controller`: the form has extras (item helper, option variables, preview, contact person depending on the contact group) that IPF's one-field-per-variable form cannot express, and `Controller::postDataToObject()` overwrites every variable that is not posted
+- [x] 4.2 Message admin: table with form filter, status combinations (preferences), quick search in the stored text and address, sorting, paging that keeps the filters, bulk status change and delete (with token), detail page with history, delete link with confirmation
+- [x] 4.3 Export (CSV) via `MessageHandler::getForExport()`; periods follow the clock of the visitor (`mod_ccenter_Period`, unit tested); columns follow the form definition; an unknown range means everything
+- [x] 4.4 `myformselect.php`, `mypagenav.php`, `getusers.php` (AJAX user lookup) and `admin_header.php` are gone; the contact person is a core select with the members of the contact group ("Change" refreshes the list after another group is chosen)
+- [x] 4.5 About via `icms_ipf_About`, help page, admin menu through `cc_display_admin_menu()`
 
 ## 5. Front-end
 - [ ] 5.1 `index.php` (listing + submit) on handlers/Controller

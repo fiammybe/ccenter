@@ -117,7 +117,7 @@ test('deleting a form removes its permissions', async () => {
   const id = h.sql("SELECT formid FROM icms_ccenter_form WHERE title='Members only'");
   assert.notEqual(perms(id), '');
   const p = await pageOf(admin);
-  await p.goto(`${MOD}/admin/index.php?op=delete&formid=${id}`);
+  await p.goto(`${MOD}/admin/index.php?op=del&formid=${id}`);
   await clickAndSettle(p, '.confirmMsg input[type=submit]');
   await eventually(() => h.sql(`SELECT count(*) FROM icms_ccenter_form WHERE formid=${id}`) === '0');
   assert.equal(perms(id), '');
@@ -174,7 +174,7 @@ test('the administration needs a token for changes', async () => {
   // message administration
   await post(p, `${MOD}/admin/msgadm.php`, { store: '1', msgid: '710', touid: '1', status: 'x' });
   assert.equal(h.sql('SELECT status FROM icms_ccenter_message WHERE msgid=710'), 'b');
-  await post(p, `${MOD}/admin/msgadm.php`, { op: 'x', 'ids[]': '710' });
+  await post(p, `${MOD}/admin/msgadm.php`, { bulk: '1', bulk_action: 'x', 'selected_icms_persistableobjects[]': '710' });
   assert.equal(h.sql('SELECT status FROM icms_ccenter_message WHERE msgid=710'), 'b');
   // with a token the same requests work
   const token = await tokenFrom(p, `${MOD}/admin/msgadm.php?id=710`);

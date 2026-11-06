@@ -19,42 +19,13 @@ if (!$form_obj || !mod_ccenter_AccessPolicy::forCurrentUser()->handlesForm($form
 }
 $form = $form_obj->toRow();
 
-$cond = "fidref=$id AND status<>".icms::$xoopsDB->quoteString(_STATUS_DEL);
-$range = isset($_GET['range']) ? icms_core_DataFilter::stripSlashesGPC($_GET['range']) : "";
-switch ($range) {
-case 'm0':
-    // start this month
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, $ym[1], 1, $ym[0]));
-    $cond .= " AND ctime>$stime";
-    break;
-case 'm1':
-    // last month
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, $ym[1]-1, 1, $ym[0]));
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $ltime = userTimeToServerTime(mktime(0, 0, 0, $ym[1], 1, $ym[0])-1);
-    $cond .= " AND ctime BETWEEN $stime AND $ltime";
-    break;
-case 'y0':
-    // start this year
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, 1, 1, $ym[0]));
-    $cond .= " AND ctime>$stime";
-    break;
-case 'y1':
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $stime = userTimeToServerTime(mktime(0, 0, 0, 1, 1, $ym[0]-1));
-    $ym = explode('-', formatTimestamp(time(), 'Y-m'));
-    $ltime = userTimeToServerTime(mktime(0, 0, 0, 1, 1, $ym[0])-1);
-    $cond .= " AND ctime BETWEEN $stime AND $ltime";
-    break;
-default:
+$range = isset($_GET['range']) ? (string) icms_core_DataFilter::stripSlashesGPC($_GET['range']) : "";
+if (!in_array($range, array('m0', 'm1', 'y0', 'y1'), true)) {
     $range = "all";
-    break;
 }
-
-$res = icms::$xoopsDB->query('SELECT * FROM '.CCMES." WHERE $cond ORDER BY msgid");
+// months and years follow the clock of the person who exports
+$offset = (int) date('Z') - userTimeToServerTime(0);	// server time zone plus the difference to the visitor's
+$messages = icms_getModuleHandler('message', 'ccenter')->getForExport($id, $range, $offset);
 
 $items = get_form_attribute($form['defs']);
 $labels = array('ID', _MD_POSTDATE, _CC_STATUS, _MD_CONTACT_FROM, _MD_CONTACT_TO);
@@ -66,7 +37,8 @@ foreach ($items as $key => $item) {
 }
 
 $contents = strip_tags(csv_str($labels))."\n";
-while ($data = icms::$xoopsDB->fetchArray($res)) {
+foreach ($messages as $message) {
+    $data = $message->toRow();
     $stored = mod_ccenter_MessageBody::fromStored($data['body'])->toLegacyArray();
     $values = array();
     foreach ($columns as $column) {

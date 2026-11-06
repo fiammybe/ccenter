@@ -118,6 +118,10 @@ $modversion['templates'][] = array(
 									'file'			=> 'ccenter_form_widgets.html',
 									'description'	=> _MI_CCENTER_WIDGET_TPL
 								);
+$modversion['templates'][] = array(
+									'file'			=> 'ccenter_admin_table.html',
+									'description'	=> defined('_MI_CCENTER_ADMTABLE_TPL') ? _MI_CCENTER_ADMTABLE_TPL : 'Table of the administration'
+								);
 
 // Blocks
 $modversion['blocks'][1] = array(

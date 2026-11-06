@@ -1,31 +1,49 @@
 <?php
-// adminstration messages
+// administration of the messages
 include "../../../include/cp_header.php";
 include "../functions.php";
-include_once "myformselect.php";
-
-if (!function_exists("easiestml")) {
-    /* XXX: support multi lang site */
-    function easiestml($text)
-    {
-        return $text;
-    }
-}
-
-// Changes are only made by POST requests that carry a valid security token.
-$is_post = $_SERVER["REQUEST_METHOD"] === "POST";
-$op = $is_post ? (string) icms_core_DataFilter::stripSlashesGPC($_POST["op"] ?? "") : "";
-$back = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : "msgadm.php";
 
 $handler = icms_getModuleHandler("message", "ccenter");
-if ($is_post && (isset($_POST["store"]) || $op !== "")) {
+$is_post = $_SERVER["REQUEST_METHOD"] === "POST";
+$op = (string) preg_replace("/[^a-z_]/", "", (string) ($_REQUEST["op"] ?? ""));
+$back = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : "msgadm.php";
+
+// ---- changes: POST requests with a valid security token only ----
+if ($is_post && (isset($_POST["store"]) || isset($_POST["bulk"]) || ($op === "del" && !empty($_POST["confirm"])))) {
     if (!cc_check_token()) {
         redirect_header($back, 3, cc_token_error());
         exit();
     }
+    if (isset($_POST["store"])) {
+        save_message($handler, $back);
+    } elseif (isset($_POST["bulk"])) {
+        bulk_action($handler, $back);
+    } else {
+        $message = $handler->find((int) ($_POST["msgid"] ?? 0));
+        $ok = $message ? $handler->delete($message, true) : false;
+        redirect_header("msgadm.php", $ok ? 1 : 3, $ok ? _AM_MSG_UPDATED : _AM_MSG_UPDATE_FAIL);
+        exit();
+    }
 }
 
-if ($is_post && isset($_POST["store"])) {
+icms_cp_header();
+cc_display_admin_menu(1);
+
+$msgid = (int) ($_GET["msgid"] ?? 0);
+if ($op === "del" && $msgid) {
+    confirm_delete($handler, $msgid);
+} elseif ($msgid) {
+    msg_detail($msgid);
+} else {
+    msg_list($handler);
+}
+
+icms_cp_footer();
+
+/** Change status and person in charge of one message. */
+function save_message($handler, $back)
+{
+    global $msg_status;
     $msgid = (int) ($_POST["msgid"] ?? 0);
     $touid = (int) ($_POST["touid"] ?? 0);
     $stat = (string) icms_core_DataFilter::stripSlashesGPC($_POST["status"] ?? "");
@@ -41,31 +59,20 @@ if ($is_post && isset($_POST["store"])) {
         $log = "";
         if ($data["status"] != $stat) {
             $sets["status"] = $stat;
-            $log .= sprintf(
-                _CC_LOG_STATUS,
-                $msg_status[$data["status"]],
-                $msg_status[$stat],
-            );
+            $log .= sprintf(_CC_LOG_STATUS, $msg_status[$data["status"]], $msg_status[$stat]);
         }
         if ($data["touid"] != $touid) {
             $sets["touid"] = $touid;
-            if ($log) {
-                $log .= "\n";
-            }
-            $log .= sprintf(
-                _CC_LOG_TOUSER,
-                ccUname($data["touid"]),
-                ccUname($touid),
-            );
+            $log .= ($log ? "\n" : "") . sprintf(_CC_LOG_TOUSER, ccUname($data["touid"]), ccUname($touid));
         } else {
             $touid = 0; // not changed
         }
-        if (count($sets)) {
+        if ($sets) {
             $sets["mtime"] = time();
             $res = $handler->updateFields($msgid, $sets);
             if ($res && $touid) {
                 // switch person in charge
-                $notification_handler = icms::handler('icms_data_notification');
+                $notification_handler = icms::handler("icms_data_notification");
                 $notification_handler->subscribe("message", $msgid, "comment", null, null, $touid);
                 $notification_handler->subscribe("message", $msgid, "status", null, null, $touid);
             }
@@ -76,336 +83,160 @@ if ($is_post && isset($_POST["store"])) {
     }
     redirect_header($back, 3, _AM_MSG_UPDATE_FAIL);
     exit();
-} elseif ($is_post && $op !== "") {
-    foreach ((array) ($_POST["ids"] ?? []) as $msgid) {
-        change_message_status((int) $msgid, 0, $op); // administrators may change any message
+}
+
+/** "With the selected": change the status of, or delete, the ticked messages. */
+function bulk_action($handler, $back)
+{
+    $action = (string) ($_POST["bulk_action"] ?? "");
+    $ids = mod_ccenter_AdminTable::selectedIds();
+    if ($action === "purge") {
+        foreach ($ids as $id) {
+            $handler->purge($id);
+        }
+    } elseif (mod_ccenter_Status::isValid($action)) {
+        foreach ($ids as $id) {
+            change_message_status($id, 0, $action); // administrators may change any message
+        }
     }
     redirect_header($back, 1, _AM_MSG_UPDATED);
     exit();
 }
 
-icms_cp_header();
-
-cc_display_admin_menu(1);
-
-if (empty($_GET["msgid"])) {
-    msg_list();
-} else {
-    msg_detail(intval($_GET["msgid"]));
+function confirm_delete($handler, $msgid)
+{
+    $message = $handler->find($msgid);
+    if (!$message) {
+        echo _AM_NODATA;
+        return;
+    }
+    icms_core_Message::confirm(
+        ["op" => "del", "msgid" => $msgid, "confirm" => 1],
+        "msgadm.php",
+        (defined("_AM_CC_DELETE_MSG") ? _AM_CC_DELETE_MSG : "Delete this message for good?") . " (ID:$msgid)",
+        _DELETE,
+    );
 }
 
-icms_cp_footer();
-
-function msg_list()
+function msg_list($handler)
 {
     global $msg_status;
 
-    $labels = [
-        "mtime" => _AM_FORM_MTIME,
-        "status" => _AM_MSG_STATUS,
-        "fidref" => _AM_FORM_TITLE,
-        "cfrom" => _AM_MSG_FROM,
-        "uname" => _AM_MSG_CHARGE,
-        "comms" => _AM_MSG_COMMS,
-        "ope" => _AM_OPERATION,
-    ];
-    $orders = [
-        "mtime" => "ASC",
-        "fidref" => "ASC",
-        "uname" => "ASC",
-        "status" => "ASC",
-        "uid" => "ASC",
-        "orders" => ["mtime"],
-    ];
+    // status filter: the combinations of the preferences ("All", "Open"...), remembered in the session
+    $listctrl = new ListCtrl("msgadm", ["orders" => ["mtime"]]);
+    $criteria = $handler->listCriteria($listctrl->getVar("stat"));
 
-    $listctrl = new ListCtrl("msgadm", $orders);
-
-    $start = isset($_GET["start"]) ? (int) $_GET["start"] : 0;
-    $search = isset($_GET["q"])
-        ? icms_core_DataFilter::stripSlashesGPC($_GET["q"])
-        : "";
-    $max = icms::$module->config["max_lists"];
-
-    $users = icms::$xoopsDB->prefix("users");
-    $comms = icms::$xoopsDB->prefix("xoopscomments");
-    $mid = icms::$module->getVar("mid");
-    $sql0 =
-        "FROM " .
-        CCMES .
-        " m LEFT JOIN " .
-        FORMS .
-        " ON fidref=formid
-LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
-    $sql1 = "LEFT JOIN $comms ON com_modid=$mid AND com_itemid=msgid";
-    $sql2 = "WHERE " . $listctrl->sqlcondition();
-    $formid = isset($_REQUEST["formid"]) ? intval($_REQUEST["formid"]) : 0;
-    if ($formid) {
-        $sql2 .= " AND fidref=$formid";
+    // links from the form list: ?formid=N&stat=...
+    if (isset($_GET["formid"]) && !isset($_GET["filtersel2"])) {
+        $_GET["filtersel"] = "fidref";
+        $_GET["filtersel2"] = (string) (int) $_GET["formid"];
     }
-    if ($search) {
-        $sql2 .=
-            " AND CONCAT(body,' ',m.email) like " .
-            icms::$xoopsDB->quoteString("%$search%");
+    mod_ccenter_AdminTable::guardRequest("message", ["msgid", "mtime", "status", "fidref", "uid", "touid"], ["fidref"]);
+    if (!isset($_GET["limitsel"]) && !isset($_POST["limitsel"])) {
+        $_GET["limitsel"] = (string) (int) icms::$module->config["max_lists"];
     }
 
-    $res = icms::$xoopsDB->query("SELECT count(msgid) $sql0 $sql2");
-    [$total] = icms::$xoopsDB->fetchRow($res);
-    $args = $formid ? "formid=$formid" : "";
-    $nav = new icms_view_PageNav($total, $max, $start, "start", $args);
+    $table = new icms_ipf_view_Table($handler, $criteria, ["delete"]);
+    $table->setCustomTemplate(mod_ccenter_AdminTable::TEMPLATE);
+    $table->setDefaultSort("mtime");
+    $table->setDefaultOrder("DESC");
+    $table->addWithSelectedActions([]);   // adds the column with the check boxes
+    $table->addColumn(new icms_ipf_view_Column("mtime", "left", 140, "getDate", false, _AM_FORM_MTIME));
+    $table->addColumn(new icms_ipf_view_Column("status", "left", 90, "getStatusText", false, _AM_MSG_STATUS));
+    $table->addColumn(new icms_ipf_view_Column("fidref", "left", false, "getSummary", false, _AM_FORM_TITLE));
+    $table->addColumn(new icms_ipf_view_Column("uid", "left", 140, "getSender", false, _AM_MSG_FROM));
+    $table->addColumn(new icms_ipf_view_Column("touid", "left", 120, "getCharge", false, _AM_MSG_CHARGE));
+    $table->addColumn(new icms_ipf_view_Column("comms", "right", 60, "getCommentCount", false, _AM_MSG_COMMS, false));
+    $table->addCustomAction("getDetailLink");
+    $table->addFilter("fidref", "getFormChoices");
+    $table->addQuickSearch(["body", "email"], _SEARCH);
 
-    $res = icms::$xoopsDB->query(
-        "SELECT m.*,title,u.uname, f.uname cfrom, count(com_id) comms $sql0 $sql1 $sql2 GROUP BY msgid" .
-            $listctrl->sqlorder(),
-        $max,
-        $start,
-    );
-    echo "<style>td.num { text-align: right; }</style>\n";
+    $actions = [];
+    foreach ($msg_status as $code => $label) {
+        $actions[$code] = _AM_MSG_CHANGESTATUS . ": " . $label;
+    }
+    $actions["purge"] = _DELETE;
+    $table->addFooter(mod_ccenter_AdminTable::bulkControls($actions, defined("_CO_ICMS_WITH_SELECTED") ? _CO_ICMS_WITH_SELECTED : "With selected:"));
+
     echo "<h2>" . _AM_MSG_ADMIN . "</h2>\n";
-    echo "<table class='ccinfo' width='100%'>\n<tr><td width='30%'>" .
-        _AM_MSG_COUNT .
-        " $total</td>\n";
-    echo "<td align='center'>" . $nav->renderNav() . "</td>\n";
-    echo "<td align='right' width='30%'>
-  <form method='get'>" .
-        _SEARCH .
-        "
-    <input name='q' value=\"" .
-        htmlspecialchars($search) .
-        '" size="8" /> &nbsp; ' .
-        _CC_STATUS .
-        " " .
-        $listctrl->renderStat() .
-        "
-      <noscript> <input type='submit' type='submit' value='" .
-        _AM_SUBMIT_VIEW .
-        "'></noscript>
-  </form>
-</td></tr>\n";
-    echo "</table>\n";
-
-    if ($res && icms::$xoopsDB->getRowsNum($res)) {
-        $sorts = ["mtime", "status", "fidref", "touid", "comms"];
-        echo "<form method='post' name='msglist'>\n" . icms::$security->getTokenHTML();
-        echo "<table class='outer' border='0' cellspacing='1'>\n";
-        echo "<tr><th><input type='checkbox' id='checkall' name='checkall' onClick='xoopsCheckAll(\"msglist\", \"checkall\");'/>";
-        foreach ($listctrl->getLabels($labels) as $lab) {
-            if (isset($lab["value"])) {
-                $extra = empty($lab["extra"]) ? "" : $lab["extra"];
-                $args = $lab["name"] . "=" . $lab["next"];
-                $anc =
-                    " <a href='?$args' title='" .
-                    _CC_SORT_ORDER .
-                    "'$extra><img src='../images/" .
-                    $lab["value"] .
-                    ".gif'></a>";
-            } else {
-                $anc = "";
-            }
-
-            echo "<th>" . $lab["text"] . "$anc</th>\n";
-        }
-        echo "</tr>\n";
-        $n = 0;
-        $dirname = basename(dirname(dirname(__FILE__)));
-        $mbase = ICMS_URL . "/modules/$dirname";
-        $strcut =
-            XOOPS_USE_MULTIBYTES && function_exists("mb_strcut")
-                ? "mb_strcut"
-                : "substr";
-        if (function_exists("easiestml")) {
-            $GLOBALS["easiestml_lang"] = substr(
-                $GLOBALS["icmsConfig"]["language"],
-                0,
-                2,
-            );
-        }
-        while ($data = icms::$xoopsDB->fetchArray($res)) {
-            $id = (int) $data["msgid"];
-            $title = easiestml(htmlspecialchars($data["title"]));
-            $stat = $data["status"];
-            $url = "$mbase/message.php?id=$id";
-            $msg =
-                $url .
-                ($data["touid"] < 0
-                    ? "&amp;uid=" . icms::$user->getVar("uid")
-                    : "");
-            $bg = $n++ % 2 ? "even" : "odd";
-            $date = myTimestamp($data["mtime"], "m", _AM_TIME_UNIT);
-            $priuname = empty($data["uname"])
-                ? _AM_FORM_PRIM_NONE
-                : htmlspecialchars($data["uname"]);
-            $from = empty($data["uid"])
-                ? $data["email"]
-                : htmlspecialchars($data["cfrom"]);
-            $box = "<input type='checkbox' name='ids[]' value='$id'/>";
-            $ope = "<a href='$msg'>" . _AM_DETAIL . "</a>";
-            $ope .= " | <a href='?msgid=$id'>" . _EDIT . "</a>";
-            $vals = mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray();
-            $fval = preg_replace('/[\n\r].*$/', "...", (string) array_shift($vals));
-            $slen = 30;
-            if (strlen($fval) > $slen) {
-                $fval = preg_replace('/\.\.\.$/', "", $fval);
-                $fval = $strcut($fval, 0, $slen) . "...";
-            }
-            $readit = $data["mtime"] < $data["atime"] ? _CC_MARK_READIT : "";
-            echo "<tr class='$bg stat$stat'><td align='center'>$box</td><td>$date</td><td>" .
-                $msg_status[$stat] .
-                $readit .
-                "</td><td>$title: $fval</td><td>$from</td><td>$priuname</td><td class='num'>" .
-                $data["comms"] .
-                "</td><td>$ope</td></tr>\n";
-        }
-        echo "</table>\n";
-        echo "<div>" .
-            _AM_MSG_CHANGESTATUS .
-            " <select name='op'><option></option>\n";
-        foreach ($msg_status as $k => $v) {
-            echo "<option value='$k'>$v</option>\n";
-        }
-        echo "</select>\n";
-        echo "<input type='submit' value='" . _AM_SUBMIT . "'/>";
-        echo "</div>\n";
-        echo "</form>\n";
-    } else {
-        echo _AM_NODATA;
-    }
-}
-
-function select_widget($name, $sel, $def)
-{
-    $input = "<select name='$name' id='$name'>\n";
-    foreach ($sel as $id => $lab) {
-        $ck = $def == $id ? ' selected="selected"' : "";
-        $input .= "<option value='$id'$ck>$lab</option>\n";
-    }
-    $input .= "</select>";
-    return $input;
+    echo "<form method='get' action='msgadm.php' style='margin-bottom: 8px;'>" . _CC_STATUS . " " . $listctrl->renderStat() .
+        "<noscript> <input type='submit' value='" . _AM_SUBMIT_VIEW . "'/></noscript></form>\n";
+    echo $table->fetch();
 }
 
 function msg_detail($msgid)
 {
     global $msg_status;
-    $users = icms::$xoopsDB->prefix("users");
-    $res = icms::$xoopsDB->query(
-        "SELECT m.*,title,priuid,u.uname,cgroup,f.uname cfrom FROM " .
-            CCMES .
-            " m LEFT JOIN " .
-            FORMS .
-            " ON fidref=formid LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid WHERE msgid=$msgid",
-    );
-    $data = icms::$xoopsDB->fetchArray($res);
-    $data["stat"] = $msg_status[$data["status"]];
-    $data["cdate"] = formatTimestamp($data["ctime"], "m");
-    $data["mdate"] = myTimestamp($data["mtime"], "m", _AM_TIME_UNIT);
-    $labs = [
-        "title" => _AM_FORM_TITLE,
-        "uid" => _AM_MSG_FROM,
-        "stat" => _AM_MSG_STATUS,
-        "cdate" => _AM_MSG_CTIME,
-        "mdate" => _AM_MSG_MTIME,
-        "uname" => _AM_MSG_CHARGE,
-    ];
-    $touid = false;
+    $handler = icms_getModuleHandler("message", "ccenter");
+    $data = $handler->getRowWithForm($msgid);
+    if (!$data) {
+        echo _AM_NODATA;
+        return;
+    }
+    $form = icms_getModuleHandler("form", "ccenter")->find($data["fidref"]);
+    $page = "../message.php?id=$msgid";
     echo "<h2>" . _AM_MSG_ADMIN . "</h2>\n";
-    echo "<form method='post'>\n" . icms::$security->getTokenHTML();
-    echo "<input type='hidden' name='msgid' value='$msgid'/>\n";
-    echo "<table class='ccinfo' cellspacing='1' width='100%'>\n";
-    $n = 0;
-    $upage = "../message.php?id=$msgid";
-    foreach ($labs as $k => $lab) {
-        $bg = $n++ % 2 ? "even" : "odd";
-        $val = htmlspecialchars($data[$k]);
-        switch ($k) {
-            case "title":
-                $val = "<a href='$upage'>$val</a>\n";
-                break;
-            case "uid":
-                if ($val > 0) {
-                    $val =
-                        "<a href='" .
-                        ICMS_URL .
-                        "/userinfo.php?uid=$val'>" .
-                        htmlspecialchars($data["cfrom"]) .
-                        "</a>";
-                } else {
-                    if ($data["email"]) {
-                        $val = htmlspecialchars($data["email"]);
-                        $val = "<a href='mailto:$val'>$val</a>";
-                    } else {
-                        $val = _CC_USER_NONE;
-                    }
-                }
-                break;
-            case "stat":
-                $val = select_widget("status", $msg_status, $data["status"]);
-                break;
-            case "uname":
-                $touid = new MyFormSelect(
-                    _AM_FORM_PRIM_CONTACT,
-                    "touid",
-                    $data["touid"],
-                );
-                $gid = $data["priuid"] < 0 ? -$data["priuid"] : $data["cgroup"];
-                $touid->addOption("0", _AM_FORM_PRIM_NONE);
-                $touid->addOptionUsers($gid);
-                $val =
-                    $touid->render() .
-                    "\n<input type='hidden' name='cgroup' id='cgroup' value='$gid'/>\n";
-                break;
-            default:
+
+    // who can be in charge: the members of the group the messages of this form go to
+    $group = $form && $form->getVar("priuid", "n") < 0 ? -$form->getVar("priuid", "n") : (int) $data["cgroup"];
+    $choices = [0 => _AM_FORM_PRIM_NONE];
+    if ($group) {
+        foreach (icms::handler("icms_member")->getUsersByGroup($group, true, 200) as $user) {
+            $choices[(int) $user->getVar("uid")] = $user->getVar("uname");
         }
-        echo "<tr><th>$lab</th><td>$val</td></tr>\n";
     }
-    echo "<tr><th></th><td><input type='submit' name='store' value='" .
-        _AM_SUBMIT .
-        "'/></td></tr>\n";
-    echo "</table>\n";
-    echo "</from><br/>\n";
-    if (!empty($touid)) {
-        echo $touid->renderSupportJS();
+    if ($data["touid"] && !isset($choices[$data["touid"]])) {
+        $choices[(int) $data["touid"]] = ccUname($data["touid"]);
     }
+    $statusSelect = new icms_form_elements_Select("", "status", $data["status"]);
+    $statusSelect->addOptionArray($msg_status);
+    $chargeSelect = new icms_form_elements_Select("", "touid", $data["touid"]);
+    $chargeSelect->addOptionArray($choices);
+
+    $sender = $data["uid"] > 0
+        ? icms_member_user_Handler::getUserLink($data["uid"])
+        : ($data["email"] ? "<a href='mailto:" . htmlspecialchars($data["email"]) . "'>" . htmlspecialchars($data["email"]) . "</a>" : htmlspecialchars(_CC_USER_NONE));
+    $rows = [
+        _AM_FORM_TITLE => "<a href='" . htmlspecialchars($page) . "'>" . htmlspecialchars($data["title"]) . "</a>",
+        _AM_MSG_FROM => $sender,
+        _AM_MSG_STATUS => $statusSelect->render(),
+        _AM_MSG_CTIME => htmlspecialchars(formatTimestamp($data["ctime"], "m")),
+        _AM_MSG_MTIME => htmlspecialchars(myTimestamp($data["mtime"], "m", _AM_TIME_UNIT)),
+        _AM_MSG_CHARGE => $chargeSelect->render(),
+    ];
+    echo "<form method='post' action='msgadm.php'>\n" . icms::$security->getTokenHTML();
+    echo "<input type='hidden' name='msgid' value='" . (int) $msgid . "'/>\n";
+    echo "<table class='ccinfo' cellspacing='1' width='100%'>\n";
+    foreach ($rows as $label => $value) {
+        echo "<tr><th>" . htmlspecialchars($label) . "</th><td>$value</td></tr>\n";
+    }
+    echo "<tr><th></th><td><input type='submit' name='store' value='" . htmlspecialchars(_AM_SUBMIT) . "'/></td></tr>\n";
+    echo "</table>\n</form><br/>\n";
+
     echo "<table class='outer' cellspacing='1'>\n";
     $n = 0;
     foreach (mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray() as $k => $v) {
         $bg = $n++ % 2 ? "even" : "odd";
-        $k = htmlspecialchars($k);
-        $v = nl2br(htmlspecialchars($v));
-        echo "<tr><td class='head'>$k</td><td class='$bg'>$v</td></tr>\n";
+        echo "<tr><td class='head'>" . htmlspecialchars($k) . "</td><td class='$bg'>" . nl2br(htmlspecialchars($v)) . "</td></tr>\n";
     }
     echo "</table>\n";
 
-    $res = icms::$xoopsDB->query(
-        "SELECT l.*,uname FROM " .
-            CCLOG .
-            " l LEFT JOIN " .
-            icms::$xoopsDB->prefix("users") .
-            " ON euid=uid WHERE midref=$msgid ORDER BY logid DESC",
-    );
-    $log = [];
     echo '<a id="logging"></a><h3>' . _AM_LOGGING . "</h3>\n";
-
-    if (icms::$xoopsDB->getRowsNum($res)) {
+    $lines = icms_getModuleHandler("log", "ccenter")->forMessage($msgid);
+    if ($lines) {
         $anon = $GLOBALS["icmsConfig"]["anonymous"];
+        $link = '(<a href="' . htmlspecialchars($page) . '#comment\1">comid=\1</a>)';
         echo "<table>\n";
-        $reg = ["/\(comid=(\d+)\)/"];
-        $rep = ['(<a href="' . $upage . '#comment\1">comid=\1</a>)'];
-        while ($data = icms::$xoopsDB->fetchArray($res)) {
-            $uname = htmlspecialchars(
-                empty($data["uname"]) ? $anon : $data["uname"],
-            );
+        foreach ($lines as $line) {
+            $uid = (int) $line->getVar("euid", "n");
+            $uname = htmlspecialchars($uid ? icms_member_user_Object::getUnameFromId($uid) : $anon);
             $comment = preg_replace(
-                $reg,
-                $rep,
-                icms_core_DataFilter::checkVar(
-                    $data["comment"],
-                    "text",
-                    "output",
-                ),
+                "/\(comid=(\d+)\)/",
+                $link,
+                icms_core_DataFilter::checkVar((string) $line->getVar("comment", "n"), "text", "output"),
             );
-            echo "<tr><td nowrap>" .
-                formatTimestamp($data["ltime"]) .
-                "</td><td nowrap>" .
-                "[$uname]</td><td width='100%'>$comment</td></tr>\n";
+            echo "<tr><td nowrap>" . htmlspecialchars(formatTimestamp($line->getVar("ltime", "n"))) .
+                "</td><td nowrap>[$uname]</td><td width='100%'>$comment</td></tr>\n";
         }
         echo "</table>\n";
     } else {
@@ -420,4 +251,3 @@ function ccUname($uid)
     }
     return icms_member_user_Object::getUnameFromId($uid);
 }
-?>

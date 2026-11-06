@@ -230,7 +230,7 @@ test('admin deletes a message by setting status "deleted"', async () => {
 test('admin deletes a form', async () => {
   const p = await admin.newPage();
   const id = h.sql("SELECT formid FROM icms_ccenter_form WHERE title='Smoke form'");
-  await p.goto(`${MOD}/admin/index.php?op=delete&formid=${id}`);
+  await p.goto(`${MOD}/admin/index.php?op=del&formid=${id}`);
   await assertOk(p, 'delete confirmation');
   await clickAndSettle(p, '.confirmMsg input[type=submit]');
   await assertOk(p, 'after delete');

@@ -42,6 +42,7 @@ Template files are stored in the database; after changing a template run the mod
 * `tests/e2e/data.test.js` (run together with the smoke tests by `npm test`) covers how forms, options and messages are
   stored as JSON, the migration of data written by earlier versions, the delete cascade and the file download.
 * `tests/e2e/security.test.js` covers access (group permissions, conversion of the old access text, an ordinary member versus the person in charge, contact group, guests) and the CSRF protection of every state-changing request. It creates a plain member `tester` (a copy of the administrator row, same password).
+* `tests/e2e/admin.test.js` covers the administration: form list (counts, sort, search, hostile sort/filter input), copying, lines/JSON editor, contact person list, preview, message list (filters, paging, search, sorting), bulk actions, detail page, delete, export periods.
 * `OLD_REF=<commit> ICMS_SRC=... tests/upgrade-test.sh 8.3` installs the module as it was at `OLD_REF`, creates a form and
   messages with that code, switches to the code in the working tree, runs the module update and checks that everything is
   converted, still shows the same and that a second update changes nothing. Use the phase 1 commit (`beab8da`) or a release tag.

@@ -7,6 +7,7 @@ class mod_ccenter_FormHandler extends icms_ipf_Handler
     public function __construct(&$db)
     {
         parent::__construct($db, 'form', 'formid', 'title', 'description', 'ccenter');
+        $this->_page = 'index.php'; // the form administration (edit and delete links of the table)
         $this->addPermission(
             self::PERM_VIEW,
             defined('_AM_CCENTER_PERM_VIEW') ? _AM_CCENTER_PERM_VIEW : 'Who may use the form',
@@ -140,23 +141,98 @@ class mod_ccenter_FormHandler extends icms_ipf_Handler
         return ($obj && !$obj->isNew()) ? $obj : null;
     }
 
+    /** @var array|null formid => [status => number of messages] */
+    private $counts;
+
     /**
-     * Delete a form with its messages and log lines. Uploaded files, comments and notification
+     * Number of messages of every form per status (without the deleted ones), in one query.
+     *
+     * @return array
+     */
+    public function messageCounts()
+    {
+        if ($this->counts === null) {
+            $db = icms::$xoopsDB;
+            $this->counts = [];
+            $res = $db->query(
+                'SELECT fidref, status, COUNT(*) FROM ' . $db->prefix('ccenter_message') .
+                ' WHERE status<>' . $db->quoteString(mod_ccenter_Status::DEL) . ' GROUP BY fidref, status'
+            );
+            while ($res && ($row = $db->fetchRow($res))) {
+                $this->counts[(int) $row[0]][$row[1]] = (int) $row[2];
+            }
+        }
+        return $this->counts;
+    }
+
+    /**
+     * Choices for "contact person": nobody, a member of a group (chosen by the link of the form), or one
+     * of the members of the contact group.
+     *
+     * @param int $contactGroup the contact group of the form (0 = none)
+     * @return array value => text
+     */
+    public function contactChoices($contactGroup)
+    {
+        $member = icms::handler('icms_member');
+        $groups = $member->getGroupList(new icms_db_criteria_Item('groupid', ICMS_GROUP_ANONYMOUS, '!='));
+        $choices = [0 => defined('_AM_FORM_PRIM_NONE') ? _AM_FORM_PRIM_NONE : 'None'];
+        foreach ($groups as $id => $name) {
+            $choices[-$id] = sprintf(_CC_FORM_PRIM_GROUP, $name);
+        }
+        if ($contactGroup) {
+            $users = $member->getUsersByGroup((int) $contactGroup, true, 200);
+            foreach ($users as $user) {
+                $choices[(int) $user->getVar('uid')] = $user->getVar('uname');
+            }
+        }
+        return $choices;
+    }
+
+    /**
+     * A new, not yet stored form with the settings of another one.
+     *
+     * @return mod_ccenter_Form
+     */
+    public function copyOf(mod_ccenter_Form $source)
+    {
+        $copy = $this->create();
+        $row = $source->toRow();
+        unset($row['formid']);
+        $row['title'] = (defined('_AM_CC_COPY_OF') ? _AM_CC_COPY_OF : 'Copy of') . ' ' . $row['title'];
+        $row['mtime'] = time();
+        $copy->setValues($row);
+        return $copy;
+    }
+
+    /**
+     * Delete a form with its messages, log lines and permission. Uploaded files, comments and notification
      * subscriptions of the messages are cleaned up as well.
+     *
+     * @param mod_ccenter_Form $obj
+     * @param bool             $force
+     * @return bool
+     */
+    public function delete(&$obj, $force = false)
+    {
+        $formId = (int) $obj->getVar('formid', 'n');
+        $messages = icms_getModuleHandler('message', 'ccenter');
+        foreach ($messages->getIdsOfForm($formId) as $msgid) {
+            $messages->purge($msgid);
+        }
+        icms_getModuleHandler('log', 'ccenter')->deleteAll(new icms_db_criteria_Item('fidref', $formId), true);
+        icms::handler('icms_member_groupperm')->deleteByModule($this->moduleId(), self::PERM_VIEW, $formId);
+        return parent::delete($obj, $force);
+    }
+
+    /**
+     * Delete a form by id (with everything that belongs to it).
      *
      * @return bool
      */
     public function deleteWithMessages($formId)
     {
-        $formId = (int) $formId;
-        $messages = icms_getModuleHandler('message', 'ccenter');
-        foreach ($messages->getIdsOfForm($formId) as $msgid) {
-            $messages->purge($msgid);
-        }
-        $log = icms_getModuleHandler('log', 'ccenter');
-        $log->deleteAll(new icms_db_criteria_Item('fidref', $formId), true);
-        icms::handler('icms_member_groupperm')->deleteByModule($this->moduleId(), self::PERM_VIEW, $formId);
-        $obj = $this->find($formId);
+        $obj = $this->find((int) $formId);
         return $obj ? (bool) $this->delete($obj, true) : true;
     }
 }

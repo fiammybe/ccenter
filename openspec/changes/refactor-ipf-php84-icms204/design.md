@@ -168,3 +168,18 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
   with "any message"; the two cases are now explicit (`canChangeStatus` / `canAdminChangeStatus`).
 - **Message administration** validated nothing: any status text and any user id could be stored. It now accepts only the five statuses and
   existing users.
+
+## Findings from phase 4 (implementation notes)
+- **`icms_ipf_view_Table` builds `ORDER BY` from the request without checking the column**; the quick search and the second filter put
+  their value into the query as typed (only HTML-escaped). `mod_ccenter_AdminTable::guardRequest()` cleans sort column, direction, numeric
+  filter values and the page size before the table reads them; a test sends `SLEEP()` payloads.
+- **The table template of the system module has no security token** on its bulk action form, and its "check all" box looks for another
+  name than the check boxes have. The module ships `ccenter_admin_table.html` (a copy with the token inside the form and a working check-all);
+  bulk controls come in through the table footer.
+- **`icms_ipf_Controller::handleObjectDeletion()` deletes on `confirm=1` without checking a token.** Deleting forms and messages uses
+  `icms_core_Message::confirm()` plus `cc_check_token()` instead; the IPF edit/delete links of the table are kept (the handlers' `_page`
+  points at the administration scripts).
+- **`FormHandler::delete()` / `MessageHandler::delete()` cascade** (messages, log, permissions, comments, subscriptions, files), so any
+  caller, including IPF's own, cleans up.
+- **Removed:** the AJAX contact person lookup. A form that is created for a new contact group needs one "Change" click to list its members.
+- **Language:** new texts (`_AM_CC_*`) have English fallbacks in the code; the language files get them in phase 6.

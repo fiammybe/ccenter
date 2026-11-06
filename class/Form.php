@@ -59,4 +59,93 @@ class mod_ccenter_Form extends mod_ccenter_Object
         sort($ids);
         $this->setVar('grpperm', $ids ? '|' . implode('|', $ids) . '|' : '');
     }
+
+    // ---- columns and actions of the administration table (called by icms_ipf_view_Table) ----
+
+    /** @return string link to the form on the site, opens in the preview window */
+    public function getTitleLink()
+    {
+        $url = ICMS_URL . '/modules/' . basename(dirname(__DIR__)) . '/index.php?form=' . (int) $this->vars['formid']['value'];
+        return '<a href="' . $url . '" target="preview">' . htmlspecialchars((string) $this->vars['title']['value']) . '</a>';
+    }
+
+    /** @return string who handles the messages of this form */
+    public function getContact()
+    {
+        $priuid = (int) $this->vars['priuid']['value'];
+        if ($priuid < 0) {
+            $groups = icms::handler('icms_member')->getGroupList();
+            return htmlspecialchars(sprintf(_CC_FORM_PRIM_GROUP, $groups[-$priuid] ?? (string) -$priuid));
+        }
+        if ($priuid) {
+            return icms_member_user_Handler::getUserLink($priuid);
+        }
+        $cgroup = (int) $this->vars['cgroup']['value'];
+        if ($cgroup) {
+            $groups = icms::handler('icms_member')->getGroupList();
+            return '[' . htmlspecialchars($groups[$cgroup] ?? (string) $cgroup) . ']';
+        }
+        return _MD_CONTACT_NOTYET;
+    }
+
+    /**
+     * Number of messages with the given status codes, as a link to the message list.
+     *
+     * @param string $statuses codes separated by spaces ("-", "a b c"...); "all" for every message
+     */
+    public function getCount($statuses = 'all')
+    {
+        $id = (int) $this->vars['formid']['value'];
+        if ((int) $this->vars['store']['value'] !== mod_ccenter_StoreMode::YES) {
+            return '--';
+        }
+        $counts = $this->handler->messageCounts();
+        $codes = $statuses === 'all' ? mod_ccenter_Status::all() : explode(' ', $statuses);
+        $n = 0;
+        foreach ($codes as $code) {
+            if ($code !== mod_ccenter_Status::DEL) {
+                $n += $counts[$id][$code] ?? 0;
+            }
+        }
+        $stat = $statuses === 'all' ? '- a b c' : $statuses;
+        return '<a href="msgadm.php?stat=' . urlencode($stat) . '&amp;formid=' . $id . '">' . $n . '</a>';
+    }
+
+    public function getWaiting()
+    {
+        return $this->getCount('-');
+    }
+
+    public function getWorking()
+    {
+        return $this->getCount('a');
+    }
+
+    public function getReplied()
+    {
+        return $this->getCount('b');
+    }
+
+    public function getClosed()
+    {
+        return $this->getCount('c');
+    }
+
+    public function getActiveMark()
+    {
+        return $this->vars['active']['value'] ? '&#10003;' : '&ndash;';
+    }
+
+    public function getCloneLink()
+    {
+        $id = (int) $this->vars['formid']['value'];
+        $label = defined('_AM_CC_CLONE') ? _AM_CC_CLONE : 'Clone';
+        return '<a href="?op=clone&amp;formid=' . $id . '" title="' . htmlspecialchars($label) . '">' . htmlspecialchars($label) . '</a>';
+    }
+
+    public function getMessagesLink()
+    {
+        $id = (int) $this->vars['formid']['value'];
+        return '<a href="' . ICMS_URL . '/modules/' . basename(dirname(__DIR__)) . '/reception.php?form=' . $id . '">' . _AM_DETAIL . '</a>';
+    }
 }

@@ -152,6 +152,30 @@ function cc_display_values($vals, $items, $msgid = 0, $add = "", $labels = [])
 	return $values;
 }
 
+/**
+ * Whether a definition (JSON or lines) can be read; what an administrator typed may be wrong.
+ *
+ * @param string $text
+ * @return bool
+ */
+function cc_definition_valid($text)
+{
+	try {
+		mod_ccenter_FormSchema::fromStored($text);
+		return true;
+	} catch (InvalidArgumentException $e) {
+		return false;
+	}
+}
+
+/**
+ * The items of a form definition as the templates and the posting code use them.
+ *
+ * @param string $defs   stored definition (JSON, or the earlier line based text)
+ * @param string $labels option variables overriding the item labels
+ * @param string $prefix prefix of the generated input names
+ * @return array
+ */
 function get_form_attribute($defs, $labels = "", $prefix = "cc")
 {
 	try {

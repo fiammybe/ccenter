@@ -182,7 +182,7 @@ test('deleting a form also removes its messages, log lines, comments, subscripti
   h.compose(['exec', '-T', 'web', 'sh', '-c', `mkdir -p ${uploads}/00600 && echo hi > ${uploads}/00600/a.txt && chmod -R 777 ${uploads}`]);
 
   const p = await page(admin);
-  await p.goto(`${MOD}/admin/index.php?op=delete&formid=60`);
+  await p.goto(`${MOD}/admin/index.php?op=del&formid=60`);
   await clickAndSettle(p, '.confirmMsg input[type=submit]');
   await eventually(() => h.sql('SELECT count(*) FROM icms_ccenter_form WHERE formid=60') === '0');
   assert.equal(h.sql('SELECT count(*) FROM icms_ccenter_message WHERE fidref=60'), '0');

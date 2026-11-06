@@ -1,0 +1,77 @@
+<{* Table of the administration (used with icms_ipf_view_Table::setCustomTemplate).
+    Differences from the table of the system module: the bulk actions form carries a security token and the
+    "check all" box works. The footer text of the table (bulk action controls, with the token) goes inside the form. *}>
+<style type="text/css">
+  div.ccadm img { vertical-align: middle; }
+  div.ccadm td.num { text-align: right; }
+</style>
+<div id="<{$icms_id}>" class="ccadm">
+<{if $icms_table_header}><{$icms_table_header}><{/if}>
+
+<div style="margin-bottom: 12px; overflow: hidden;">
+  <{if $icms_introButtons}>
+    <div style="float: <{$smarty.const._GLOBAL_LEFT}>;">
+      <{foreach from=$icms_introButtons item=introButton}>
+        <input type="button" name="<{$introButton.name}>" onclick="location='<{$introButton.location}>'" value="<{$introButton.value}>" />
+      <{/foreach}>
+    </div>
+  <{/if}>
+  <{if $icms_quicksearch}>
+    <form action="<{$icms_optionssel_action}>" method="post" style="float: <{$smarty.const._GLOBAL_RIGHT}>; margin: 0;">
+      <strong><{$icms_quicksearch}> :</strong>
+      <input type="text" id="quicksearch_<{$icms_id}>" name="quicksearch_<{$icms_id}>" size="15" maxlength="255" />
+      <input type="submit" name="button_quicksearch_<{$icms_id}>" value="<{$smarty.const._SEARCH}>" />
+    </form>
+  <{/if}>
+</div>
+
+<{if $icms_pagenav}><div style="text-align: <{$smarty.const._GLOBAL_RIGHT}>; padding-bottom: 3px;"><{$icms_pagenav}></div><{/if}>
+
+<form id="form_<{$icms_id}>" name="form_<{$icms_id}>" method="post" action="<{$icms_optionssel_action}>">
+<table width="100%" cellspacing="1" cellpadding="3" border="0" class="outer">
+  <tr>
+    <{foreach from=$icms_columns item=column}>
+      <th width="<{$column.width}>" align="<{$column.align}>"><strong><{$column.caption}></strong></th>
+    <{/foreach}>
+    <{if $icms_has_actions}>
+      <th width="<{$icms_actions_column_width}>" align="center">
+        <{if $icms_show_action_column_title}><strong><{$smarty.const._CO_ICMS_ACTIONS}></strong><{/if}>
+      </th>
+    <{/if}>
+  </tr>
+  <{if $icms_persistable_objects}>
+    <{foreach from=$icms_persistable_objects item=icms_object}>
+      <tr>
+        <{foreach from=$icms_object.columns item=column}>
+          <td class="<{$column.keyname}> <{$icms_object.class}>" width="<{$column.width}>" align="<{$column.align}>"><{$column.value}></td>
+        <{/foreach}>
+        <{if $icms_object.actions}>
+          <td class="<{$icms_object.class}>" align="center">
+            <{foreach from=$icms_object.actions item=action}><{$action}> <{/foreach}>
+          </td>
+        <{/if}>
+      </tr>
+    <{/foreach}>
+  <{else}>
+    <tr><td class="head" style="text-align: center; font-weight: bold;" colspan="<{$icms_colspan}>"><{$smarty.const._CO_ICMS_NO_OBJECT}></td></tr>
+  <{/if}>
+</table>
+<{if $icms_table_footer}><{$icms_table_footer}><{/if}>
+</form>
+
+<{if $icms_pagenav}><div style="text-align: <{$smarty.const._GLOBAL_RIGHT}>; padding-top: 3px;"><{$icms_pagenav}></div><{/if}>
+</div>
+<script type="text/javascript">
+//<![CDATA[
+(function () {
+  // the "check all" box of the table header (the one of the system module looks for another name)
+  var all = document.getElementById('checkall_icmspersistableobjects');
+  var form = document.getElementById('form_<{$icms_id}>');
+  if (!all || !form) { return; }
+  all.onclick = function () {
+    var boxes = form.querySelectorAll('input[name="selected_icms_persistableobjects[]"]');
+    for (var i = 0; i < boxes.length; i++) { boxes[i].checked = all.checked; }
+  };
+})();
+//]]>
+</script>
