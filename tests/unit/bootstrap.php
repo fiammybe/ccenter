@@ -55,7 +55,7 @@ if (!function_exists('formatTimestamp')) {
 }
 
 $GLOBALS['icmsConfig'] = ['language' => 'english'];
-foreach (['_MD_REQUIRE_MARK' => '*'] as $k => $v) {
+foreach (['_MD_REQUIRE_MARK' => '*', '_YES' => 'Yes', '_NO' => 'No'] as $k => $v) {
     defined($k) or define($k, $v);
 }
 

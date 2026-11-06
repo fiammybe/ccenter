@@ -183,3 +183,8 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
   caller, including IPF's own, cleans up.
 - **Removed:** the AJAX contact person lookup. A form that is created for a new contact group needs one "Change" click to list its members.
 - **Language:** new texts (`_AM_CC_*`) have English fallbacks in the code; the language files get them in phase 6.
+
+## Findings from the IPF edit form (phase 4b)
+- **Extension points used:** module-defined controls (`class/form/elements/ccenter<control>element.php`, found by `setControl(['name'=>...])`), `setControl(['object'=>$this,'method'=>...])` for the contact person, `onSelect=>'submit'` (`op=changedField`) for the contact group, `addCustomButton()` for the preview, `addPermission('form_view')` for the access groups, `doStoreFromDefaultForm(..., null)` to get the object back without a redirect, and a `Controller` subclass.
+- **Gaps in IPF handled in the module:** `Controller::postDataToObject()` overwrites variables that are not posted; the controller checks no token (`cc_check_token()` first); `Handler::insert()` ignores errors set on the object, so `FormHandler::beforeSave()` refuses to store when `hasError()`; `saveItem_Permissions` fails when no group is checked (`$_POST['form_view']` is defaulted to an empty array); the permission rows are written after the insert, so the `grpperm` column is mirrored afterwards (`syncLegacyColumn()`).
+- **Changed names in the form:** access groups `form_view[]` (was `grpperm[]`), save button `create_button`/`modify_button` (was `formdefs`), the "Change" button is gone. The FCKeditor option was dropped (its files do not exist in 2.0.4).

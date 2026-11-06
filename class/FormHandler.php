@@ -15,6 +15,41 @@ class mod_ccenter_FormHandler extends icms_ipf_Handler
         );
     }
 
+    /** @var int[] groups that are preselected for a new form (the "form_view" permission control reads this) */
+    public $defaultGroups = [ICMS_GROUP_USERS];
+
+    /** The IPF permission control takes the groups of a new object from "def_perm_<permission>" of the module configuration. */
+    public function getModuleConfig()
+    {
+        $config = parent::getModuleConfig();
+        $config = is_array($config) ? $config : [];
+        $config['def_perm_' . self::PERM_VIEW] = $this->defaultGroups;
+        return $config;
+    }
+
+    /** IPF event: before a form is stored. */
+    public function beforeSave(&$obj)
+    {
+        if ($obj->hasError()) {
+            return false;   // the posted values were refused (see mod_ccenter_Controller); nothing is stored
+        }
+        $obj->setVar('mtime', time());
+        return true;
+    }
+
+    /**
+     * Copy the groups of the group permission into the "grpperm" column. The column is only kept so that the
+     * earlier version still works after a downgrade; IPF stores the permission itself after the form.
+     */
+    public function syncLegacyColumn($formId)
+    {
+        $form = $this->find((int) $formId);
+        if ($form) {
+            $form->setAllowedGroups($this->getAllowedGroups($formId));
+            $this->insert($form, true);
+        }
+    }
+
     /** Name of the permission that lets a group use a form. */
     const PERM_VIEW = 'form_view';
 

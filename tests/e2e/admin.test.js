@@ -87,7 +87,7 @@ test('a form can be copied', async () => {
   assert.equal(await p.inputValue('[name=formid]'), '0', 'saving creates a new form');
   assert.equal(await p.inputValue('[name=title]'), 'Copy of Zebra form');
   assert.equal(await p.inputValue('[name=defs]'), 'A');
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await eventually(() => h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Copy of Zebra form'") === '1');
   const copy = h.sql("SELECT formid FROM icms_ccenter_form WHERE title='Copy of Zebra form'");
   assert.notEqual(copy, '80');
@@ -109,21 +109,21 @@ test('the definition can be edited as lines or as JSON', async () => {
   // JSON that is changed and saved
   json.items.push({ key: 'Phone', type: 'text', label: 'Phone number', attrs: { size: 15 } });
   await p.fill('[name=defs]', JSON.stringify(json, null, 2));
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await eventually(() => h.sql('SELECT defs FROM icms_ccenter_form WHERE formid=1').includes('Phone number'));
   await p.goto(`${MOD}/admin/index.php?op=mod&formid=1`);
   assert.match(await p.inputValue('[name=defs]'), /^Phone=Phone number,size=15$/m, 'shown as a line again');
 
   // broken JSON is refused, with a message, and what was typed stays
   await p.fill('[name=defs]', '{"version":1,"items":[{"key":"A"},{"key":"A"}]');
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   assert.match(await text(p), /not valid JSON/);
   assert.equal(await p.inputValue('[name=defs]'), '{"version":1,"items":[{"key":"A"},{"key":"A"}]');
   assert.ok(h.sql('SELECT defs FROM icms_ccenter_form WHERE formid=1').includes('Phone number'), 'stored definition is untouched');
   // restore the sample definition
   await p.goto(`${MOD}/admin/index.php?op=mod&formid=1`);
   await p.fill('[name=defs]', lines);
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await eventually(() => !h.sql('SELECT defs FROM icms_ccenter_form WHERE formid=1').includes('Phone number'));
 });
 
@@ -136,14 +136,13 @@ test('the contact person is chosen from the members of the contact group', async
   assert.ok(before.some(([v]) => v === '0'), 'nobody');
   assert.ok(before.some(([v, t]) => v === '-2' && /Registered/.test(t)), 'a member of a group (chosen by the link)');
   assert.ok(!before.some(([v]) => v === testerId), 'the member is not in the list of the webmasters');
-  await p.selectOption('[name=cgroup]', '2');
-  await clickAndSettle(p, '[name=chggrp]');
+  await Promise.all([p.waitForNavigation(), p.selectOption('[name=cgroup]', '2')]);   // the select reloads the form
   await assertOk(p, 'after change');
   assert.ok((await options()).some(([v, t]) => v === testerId && t === 'tester'), 'the members of the contact group are offered');
   assert.equal(h.sql('SELECT cgroup FROM icms_ccenter_form WHERE formid=1'), '0', 'nothing was saved by "change"');
   // saving with that member as contact person
   await p.selectOption('[name=priuid]', testerId);
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await eventually(() => h.sql('SELECT priuid FROM icms_ccenter_form WHERE formid=1') === testerId);
   h.sql('UPDATE icms_ccenter_form SET priuid=1, cgroup=0 WHERE formid=1');
 });

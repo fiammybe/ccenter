@@ -143,7 +143,7 @@ test('admin creates and edits a form', async () => {
   await p.goto(`${MOD}/admin/index.php?op=edit`);
   await p.fill('[name=title]', 'Smoke form');
   await p.fill('[name=defs]', 'Subject*,size=30\nDetails,textarea');
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await assertOk(p, 'after save');
   await eventually(() => h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Smoke form'") === '1');
 });

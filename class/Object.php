@@ -6,6 +6,14 @@
 abstract class mod_ccenter_Object extends icms_ipf_Object
 {
     /**
+     * A text from the language files, or the default when the file is not loaded (e.g. on the site side).
+     */
+    protected static function text($constant, $default = '')
+    {
+        return defined($constant) ? constant($constant) : $default;
+    }
+
+    /**
      * Raw column values, like a database row (no HTML escaping, no formatting).
      *
      * @return array

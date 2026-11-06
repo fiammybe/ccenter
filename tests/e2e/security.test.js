@@ -88,8 +88,8 @@ test('the administrator chooses the groups; they become group permissions', asyn
   await p.goto(`${MOD}/admin/index.php?op=edit`);
   await p.fill('[name=title]', 'Members only');
   await p.fill('[name=defs]', 'Subject*');
-  await p.selectOption('[name="grpperm[]"]', ['2']);
-  await clickAndSettle(p, '[name=formdefs]');
+  await p.selectOption('[name="form_view[]"]', ['2']);
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   const id = await eventually(() => h.sql("SELECT formid FROM icms_ccenter_form WHERE title='Members only'"));
   await eventually(() => perms(id) === '2');
   assert.equal(h.sql(`SELECT grpperm FROM icms_ccenter_form WHERE formid=${id}`), '|2|');
@@ -104,9 +104,9 @@ test('the administrator chooses the groups; they become group permissions', asyn
 
   // editing shows the groups again, and changing them changes the permission
   await p.goto(`${MOD}/admin/index.php?formid=${id}`);
-  assert.deepEqual(await p.$$eval('[name="grpperm[]"] option:checked', (o) => o.map((x) => x.value)), ['2']);
-  await p.selectOption('[name="grpperm[]"]', ['2', '3']);
-  await clickAndSettle(p, '[name=formdefs]');
+  assert.deepEqual(await p.$$eval('[name="form_view[]"] option:checked', (o) => o.map((x) => x.value)), ['2']);
+  await p.selectOption('[name="form_view[]"]', ['2', '3']);
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await eventually(() => perms(id) === '2,3');
   await g.goto(`${MOD}/index.php?form=${id}`);
   assert.ok(await g.$('[name=cc1]'), 'guests now get it too');
@@ -165,7 +165,7 @@ test('the administration needs a token for changes', async () => {
   const p = await pageOf(admin);
   await p.goto(`${MOD}/admin/index.php`);
   // new form
-  await post(p, `${MOD}/admin/index.php`, { formdefs: '1', formid: '0', title: 'Forged form', description: 'x', defs: 'A', priuid: '1', cgroup: '0', store: '1', custom: '0', weight: '0', active: '1' });
+  await post(p, `${MOD}/admin/index.php`, { op: 'addform', formid: '0', title: 'Forged form', description: 'x', defs: 'A', priuid: '1', cgroup: '0', store: '1', custom: '0', weight: '0', active: '1' });
   assert.equal(h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Forged form'"), '0');
   // delete
   h.sql(`INSERT INTO icms_ccenter_form (formid,mtime,title,defs,grpperm,priuid) VALUES (72,1,'Keep me','A','|2|',1)`);

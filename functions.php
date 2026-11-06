@@ -42,6 +42,37 @@ $export_range = [
 	"all" => _CC_EXPORT_ALL,
 ];
 
+// option variables of a form: how they are asked for in the administration
+if (!defined("_CC_OPTDEFS")) {
+	define(
+		"_CC_OPTDEFS",
+		"notify_with_email,radio,1=" . _YES . ",=" . _NO . "
+redirect,text,size=60
+reply_comment,textarea,cols=60,rows=10
+reply_use_comtpl,radio,1=" . _YES . ",=" . _NO . "
+others,textarea",
+	);
+}
+
+/** The option variables as posted by the administration form (JSON object). */
+function cc_post_optvars()
+{
+	$items = get_form_attribute(_CC_OPTDEFS, "", "optvar");
+	assign_post_values($items);
+	$vars = [];
+	foreach ($items as $item) {
+		$fname = $item["name"];
+		if ($fname == "others") {
+			foreach (mod_ccenter_OptionVars::parse($item["value"]) as $k => $v) {
+				$vars[$k] = $v;
+			}
+		} elseif ($item["value"]) {
+			$vars[$fname] = $item["value"];
+		}
+	}
+	return mod_ccenter_OptionVars::encode($vars);
+}
+
 define("_CC_TPL_NONE", 0);
 define("_CC_TPL_BLOCK", 1);
 define("_CC_TPL_FULL", 2);

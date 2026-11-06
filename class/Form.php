@@ -10,18 +10,80 @@ class mod_ccenter_Form extends mod_ccenter_Object
     {
         parent::__construct($handler);
         $this->initVar('formid', XOBJ_DTYPE_INT, 0, false);
-        $this->initVar('mtime', XOBJ_DTYPE_INT, 0, false);
-        $this->initVar('title', XOBJ_DTYPE_OTHER, '', false);
-        $this->initVar('description', XOBJ_DTYPE_OTHER, '', false);
-        $this->initVar('defs', XOBJ_DTYPE_OTHER, '', false);        // JSON form schema (or the earlier text)
-        $this->initVar('grpperm', XOBJ_DTYPE_OTHER, '', false);     // accepting groups |ID|ID|
-        $this->initVar('priuid', XOBJ_DTYPE_INT, 0, false);         // person in charge (negative: member of group -id)
-        $this->initVar('cgroup', XOBJ_DTYPE_INT, 0, false);         // contact group
-        $this->initVar('store', XOBJ_DTYPE_INT, mod_ccenter_StoreMode::YES, false);
-        $this->initVar('custom', XOBJ_DTYPE_INT, 0, false);
-        $this->initVar('active', XOBJ_DTYPE_INT, 1, false);
-        $this->initVar('weight', XOBJ_DTYPE_INT, 0, false);
-        $this->initVar('optvars', XOBJ_DTYPE_OTHER, '', false);     // JSON object (or the earlier key=value text)
+        $this->initVar('mtime', XOBJ_DTYPE_INT, 0, false, null, '', false, '', '', false, true, false);
+        $this->initVar('title', XOBJ_DTYPE_OTHER, '', false, 80, '', false, self::text('_AM_FORM_TITLE', 'Form name'), '', true);
+        $this->initVar('description', XOBJ_DTYPE_OTHER, '', false, null, '', false, self::text('_AM_FORM_DESCRIPTION', 'Description'));
+        $this->initVar('defs', XOBJ_DTYPE_OTHER, '', false, null, '', false, self::text('_AM_FORM_DEFS', 'Form definition'), self::text('_AM_FORM_DEFS_DESC'));
+        $this->initVar('grpperm', XOBJ_DTYPE_OTHER, '', false, null, '', false, '', '', false, true, false); // accepting groups |ID|ID| (kept in step with the group permission)
+        $this->initVar('priuid', XOBJ_DTYPE_INT, 0, false, null, '', false, self::text('_AM_FORM_PRIM_CONTACT', 'Contact person'), self::text('_AM_FORM_PRIM_DESC'));
+        $this->initVar('cgroup', XOBJ_DTYPE_INT, 0, false, null, '', false, self::text('_AM_FORM_CONTACT_GROUP', 'Contact group'));
+        $this->initVar('store', XOBJ_DTYPE_INT, mod_ccenter_StoreMode::YES, false, null, '', false, self::text('_AM_FORM_STORE', 'Store in database'));
+        $this->initVar('custom', XOBJ_DTYPE_INT, 0, false, null, '', false, self::text('_AM_FORM_CUSTOM', 'Description type'));
+        $this->initVar('active', XOBJ_DTYPE_INT, 1, false, null, '', false, self::text('_AM_FORM_ACTIVE', 'Form active'));
+        $this->initVar('weight', XOBJ_DTYPE_INT, 0, false, null, '', false, self::text('_AM_FORM_WEIGHT', 'Weight'), '', true);
+        $this->initVar('optvars', XOBJ_DTYPE_OTHER, '', false, null, '', false, self::text('_AM_FORM_OPTIONS', 'Option variables'), self::text('_AM_FORM_OPTIONS_DESC'));
+
+        // controls of the edit form (see class/form/elements for the module's own ones)
+        $this->setControl('title', ['name' => 'text', 'size' => 35, 'maxlength' => 80]);
+        $this->setControl('description', ['name' => 'description']);
+        $this->setControl('defs', ['name' => 'defs']);
+        $this->setControl('priuid', ['object' => $this, 'method' => 'contactChoices']);
+        $this->setControl('cgroup', ['object' => $this, 'method' => 'contactGroupChoices', 'onSelect' => 'submit']);
+        $this->setControl('store', ['object' => $this, 'method' => 'storeChoices']);
+        $this->setControl('custom', ['object' => $this, 'method' => 'customChoices']);
+        $this->setControl('active', ['name' => 'yesno']);
+        $this->setControl('weight', ['name' => 'text', 'size' => 5, 'maxlength' => 8]);
+        $this->setControl('optvars', ['name' => 'optvars']);
+    }
+
+    /** @var string|null the definition as typed in the edit form, while it could not be stored (shown again as typed) */
+    public $typedDefs;
+
+    /** @return array person in charge: nobody, a member of a group, or a member of the contact group */
+    public function contactChoices()
+    {
+        $choices = $this->handler->contactChoices((int) $this->vars['cgroup']['value']);
+        $current = (int) $this->vars['priuid']['value'];
+        if ($current > 0 && !isset($choices[$current])) {
+            $choices[$current] = icms_member_user_Object::getUnameFromId($current);
+        }
+        return $choices;
+    }
+
+    /** @return array group id => name (0: none) */
+    public function contactGroupChoices()
+    {
+        $groups = icms::handler('icms_member')->getGroupList(new icms_db_criteria_Item('groupid', ICMS_GROUP_ANONYMOUS, '!='));
+        return [0 => self::text('_AM_FORM_CGROUP_NONE', 'None')] + $groups;
+    }
+
+    /** @return array */
+    public function storeChoices()
+    {
+        return mod_ccenter_LegacyText::unserializeVars(self::text('_CC_STORE_MODE', '0=Log only,1=Store,2=Never'), true);
+    }
+
+    /** @return array */
+    public function customChoices()
+    {
+        return mod_ccenter_LegacyText::unserializeVars(self::text('_AM_CUSTOM_DESCRIPTION', '0=Normal,1=Part template,2=Overall template,4=HTML'));
+    }
+
+    /**
+     * The definition as the edit form shows it: what was typed when that could not be stored, otherwise the stored
+     * definition as lines of text or (format "json") as JSON.
+     */
+    public function definitionForEditing($format = 'lines')
+    {
+        if ($this->typedDefs !== null) {
+            return $this->typedDefs;
+        }
+        try {
+            $schema = $this->schema();
+            return $format === 'json' ? $schema->toJson(true) : $schema->toLegacy();
+        } catch (InvalidArgumentException $e) {
+            return (string) $this->vars['defs']['value']; // so that it can be repaired
+        }
     }
 
     /** @return mod_ccenter_FormSchema */

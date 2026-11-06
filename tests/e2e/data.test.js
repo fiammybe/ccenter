@@ -143,7 +143,7 @@ test('the form administration stores the definition as JSON and shows it as edit
   await p.goto(`${MOD}/admin/index.php?op=edit`);
   await p.fill('[name=title]', 'Admin made');
   await p.fill('[name=defs]', 'Subject*,size=30\nColor,select,r=Red,g+=Green\n# note');
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   await assertOk(p, 'after save');
   await eventually(() => h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Admin made'") === '1');
   const stored = h.sql("SELECT defs FROM icms_ccenter_form WHERE title='Admin made'");
@@ -166,7 +166,7 @@ test('an invalid definition is refused with a message and not stored', async () 
   await p.goto(`${MOD}/admin/index.php?op=edit`);
   await p.fill('[name=title]', 'Broken');
   await p.fill('[name=defs]', '{"version":1,"items":[{"key":"A"},{"key":"A"}]}');
-  await clickAndSettle(p, '[name=formdefs]');
+  await clickAndSettle(p, '[name=modify_button], [name=create_button]');
   assert.match(await text(p), /used twice/);
   assert.equal(h.sql("SELECT count(*) FROM icms_ccenter_form WHERE title='Broken'"), '0');
   h.clearPhpLog();   // the invalid text was shown again and logged as such on purpose
