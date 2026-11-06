@@ -31,7 +31,8 @@ class mod_ccenter_Mailer
             switch ($users->getVar('notify_method')) {
                 case XOOPS_NOTIFICATION_METHOD_PM:
                     $mailer->usePM();
-                    $mailer->setFromUser(is_object(icms::$user) ? icms::$user : new icms_member_user_Object());
+                    $sender = is_object(icms::$user) ? icms::$user : new icms_member_user_Object(); // by-reference parameter
+                    $mailer->setFromUser($sender);
                     break;
                 case XOOPS_NOTIFICATION_METHOD_EMAIL:
                     $mailer->useMail();
