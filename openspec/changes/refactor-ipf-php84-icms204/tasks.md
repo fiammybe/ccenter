@@ -38,11 +38,11 @@
 - [x] 4.5 About via `icms_ipf_About`, help page, admin menu through `cc_display_admin_menu()`
 
 ## 5. Front-end
-- [ ] 5.1 `index.php` (listing + submit) on handlers/Controller
-- [ ] 5.2 `list.php`, `charge.php`, `reception.php` with `icms_view_PageNav` and `icms_view_Breadcrumb`
-- [ ] 5.3 `message.php`, `status.php`, `file.php`, `export.php`
-- [ ] 5.4 Blocks (receipt, form) and comment/notification callbacks
-- [ ] 5.5 Templates: keep names and variables; fix escaping
+- [x] 5.1 `index.php`: listing through `FormHandler::getAccessible()`; storing a submission moved to `mod_ccenter_Submission::store()` (the widget/POST/template functions stay in `functions.php`: moving them is a separate step)
+- [x] 5.2 `list.php`, `charge.php`, `reception.php` on `MessageHandler`/`FormHandler` methods (criteria, whitelisted sort keys), `icms_view_PageNav`, `mod_ccenter_ListState` (replaces `ListCtrl`) and `mod_ccenter_Breadcrumbs` (the themes read the `xoops_breadcrumbs` array, so `icms_view_Breadcrumb`, which renders its own HTML, is not used)
+- [x] 5.3 `message.php`, `status.php`, `file.php`, `export.php` (no raw SQL left; `is_cc_evaluate` and `cc_check_comment` use handler methods)
+- [x] 5.4 Blocks (receipt, form) and notification callback on handler methods. Checked by running the block functions, not by an e2e test (blocks need to be placed on a page)
+- [x] 5.5 Templates keep names and variables; the form title in the message lists is now escaped
 
 ## 6. Install / update / release
 - [ ] 6.1 `icms_version.php` 2.0 manifest, `object_items`, no globals

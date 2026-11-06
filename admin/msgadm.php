@@ -123,8 +123,8 @@ function msg_list($handler)
     global $msg_status;
 
     // status filter: the combinations of the preferences ("All", "Open"...), remembered in the session
-    $listctrl = new ListCtrl("msgadm", ["orders" => ["mtime"]]);
-    $criteria = $handler->listCriteria($listctrl->getVar("stat"));
+    $listctrl = mod_ccenter_ListState::forRequest("msgadm", ["orders" => ["mtime"]]);
+    $criteria = $handler->listCriteria($listctrl->statuses());
 
     // links from the form list: ?formid=N&stat=...
     if (isset($_GET["formid"]) && !isset($_GET["filtersel2"])) {

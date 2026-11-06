@@ -178,6 +178,8 @@ class mod_ccenter_FormHandler extends icms_ipf_Handler
 
     /** @var array|null formid => [status => number of messages] */
     private $counts;
+    /** @var array|null formid => time of the newest message that is not deleted */
+    private $lastTimes;
 
     /**
      * Number of messages of every form per status (without the deleted ones), in one query.
@@ -189,12 +191,14 @@ class mod_ccenter_FormHandler extends icms_ipf_Handler
         if ($this->counts === null) {
             $db = icms::$xoopsDB;
             $this->counts = [];
+            $this->lastTimes = [];
             $res = $db->query(
-                'SELECT fidref, status, COUNT(*) FROM ' . $db->prefix('ccenter_message') .
+                'SELECT fidref, status, COUNT(*), MAX(mtime) FROM ' . $db->prefix('ccenter_message') .
                 ' WHERE status<>' . $db->quoteString(mod_ccenter_Status::DEL) . ' GROUP BY fidref, status'
             );
             while ($res && ($row = $db->fetchRow($res))) {
                 $this->counts[(int) $row[0]][$row[1]] = (int) $row[2];
+                $this->lastTimes[(int) $row[0]] = max($this->lastTimes[(int) $row[0]] ?? 0, (int) $row[3]);
             }
         }
         return $this->counts;
@@ -269,5 +273,55 @@ class mod_ccenter_FormHandler extends icms_ipf_Handler
     {
         $obj = $this->find((int) $formId);
         return $obj ? (bool) $this->delete($obj, true) : true;
+    }
+
+    /**
+     * Forms a user takes care of (the reception page): all for an administrator, else those with the user as contact
+     * person or a contact group the user is in. Each row has the number of messages (not deleted) and the time of the
+     * newest one.
+     *
+     * @param int   $uid
+     * @param int[] $groups
+     * @param bool  $isAdmin
+     * @param int   $formId 0 = every form
+     * @return array rows of forms
+     */
+    public function getReceptionRows($uid, array $groups, $isAdmin, $formId = 0)
+    {
+        $criteria = new icms_db_criteria_Compo();
+        if (!$isAdmin) {
+            $groups = array_map('intval', $groups) ?: [0];
+            $mine = new icms_db_criteria_Compo(new icms_db_criteria_Item('priuid', (int) $uid));
+            $mine->add(new icms_db_criteria_Item('cgroup', '(' . implode(',', $groups) . ')', 'IN'), 'OR');
+            $criteria->add($mine);
+        }
+        if ($formId) {
+            $criteria->add(new icms_db_criteria_Item('formid', (int) $formId));
+        }
+        $criteria->setSort('weight, formid');
+        $criteria->setOrder('ASC');
+        $counts = $this->messageCounts();
+        $rows = [];
+        foreach ($this->getObjects($criteria) as $form) {
+            $row = $form->toRow();
+            $id = (int) $row['formid'];
+            $row['nmsg'] = array_sum($counts[$id] ?? []);
+            $row['ltime'] = $this->lastTimes[$id] ?? 0;
+            $rows[] = $row;
+        }
+        return $rows;
+    }
+
+    /** @return array id => title of the active forms, in display order (choices of the form block) */
+    public function activeChoices()
+    {
+        $choices = [];
+        $criteria = new icms_db_criteria_Compo(new icms_db_criteria_Item('active', 1));
+        $criteria->setSort('weight, formid');
+        $criteria->setOrder('ASC');
+        foreach ($this->getObjects($criteria) as $form) {
+            $choices[(int) $form->getVar('formid', 'n')] = (string) $form->getVar('title', 'n');
+        }
+        return $choices;
     }
 }

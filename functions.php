@@ -629,18 +629,7 @@ function cc_get_message($msgid)
 
 function cc_check_comment($msgid, $com_id)
 {
-	$res = icms::$xoopsDB->query(
-		"SELECT com_itemid FROM " .
-			icms::$xoopsDB->prefix("xoopscomments") .
-			" WHERE com_id=" .
-			(int) $com_id .
-			" AND com_itemid=" .
-			(int) $msgid .
-			" AND com_modid=" .
-			icms::$module->getVar("mid"),
-	);
-	[$com_itemid] = icms::$xoopsDB->fetchRow($res);
-	return $com_itemid;
+	return icms_getModuleHandler("message", "ccenter")->commentItem($com_id, $msgid);
 }
 
 function cc_onetime_ticket($genseed = "mypasswdbasestring")
@@ -656,47 +645,11 @@ function cc_onetime_ticket($genseed = "mypasswdbasestring")
 	);
 }
 
-function cc_delete_message($msgid)
-{
-	//$res = icms::$xoopsDB->queryF("DELETE FROM ".CCMES." WHERE msgid=".$msgid);
-	$dir = ICMS_UPLOAD_PATH . cc_attach_path(0, "");
-	$dh = opendir($dir);
-	while ($file = readdir($dh)) {
-		if ($file == ".." || $file == ".") {
-			continue;
-		}
-		$path = "$dir/$file";
-		unlink($path);
-	}
-}
 
-function cc_message_entry($data, $link = "message.php")
-{
-	global $msg_status;
-	$id = $data["msgid"];
-	return [
-		"msgid" => $id,
-		"mdate" => myTimestamp($data["mtime"], "m", _MD_TIME_UNIT),
-		"title" => "<a href='message.php?id=$id'>" . $data["title"] . "</a>",
-		"uname" => icms_member_user_Handler::getUserLink($data["uid"]),
-		"status" => $msg_status[$data["status"]],
-		"raw" => $data,
-	];
-}
 
 function is_cc_evaluate($id, $uid, $pass)
 {
-	$cond = $pass
-		? "onepass=" . icms::$xoopsDB->quoteString($pass)
-		: "uid=$uid";
-	$res = icms::$xoopsDB->query(
-		"SELECT count(uid) FROM " .
-			CCMES .
-			" WHERE msgid=$id AND $cond AND status=" .
-			icms::$xoopsDB->quoteString(_STATUS_REPLY),
-	);
-	[$ret] = icms::$xoopsDB->fetchRow($res);
-	return $ret;
+	return icms_getModuleHandler("message", "ccenter")->isEvaluable($id, $uid, (string) $pass);
 }
 
 function cc_notify_mail($tpl, $tags, $users, $from = "")
@@ -915,132 +868,6 @@ function cc_display_admin_menu($current = 0, $breadcrumb = "")
 }
 
 // adhoc class - not for reuse
-class ListCtrl
-{
-	public $name;
-	public $vars;
-	public $combo;
-
-	public function __construct($name, $init = [], $combo = "")
-	{
-		if (empty($combo)) {
-			$combo = icms::$module->config["status_combo"];
-		}
-		$this->name = $name;
-		$this->combo = unserialize_text($combo);
-		if (!isset($_SESSION["listctrl"])) {
-			$_SESSION["listctrl"] = [];
-		}
-		if (
-			!isset($_SESSION["listctrl"][$name]) ||
-			(isset($_GET["reset"]) && $_GET["reset"] == "yes")
-		) {
-			if (!isset($init["stat"])) {
-				[$init["stat"]] = array_values($this->combo);
-			}
-			$_SESSION["listctrl"][$name] = $init;
-		}
-		$this->vars = &$_SESSION["listctrl"][$name];
-		$this->updateVars($_REQUEST);
-	}
-
-	function getVar($name)
-	{
-		return isset($this->vars[$name]) ? $this->vars[$name] : "";
-	}
-
-	function setVar($name, $val)
-	{
-		$this->vars[$name] = $val;
-	}
-
-	function getLabels($labels)
-	{
-		$result = [];
-		$orders = $this->getVar("orders");
-		foreach ($labels as $k => $v) {
-			$lab = ["text" => $v, "name" => $k, "extra" => ""];
-			if (isset($this->vars[$k])) {
-				// with ctrl
-				$n = array_search($k, $orders);
-				if (is_int($n)) {
-					$val = strtolower($this->getVar($k));
-					$lab["value"] = $val;
-					$lab["next"] = $val == "desc" ? "asc" : "desc";
-					$lab["extra"] = " class='ccord$n'";
-				} else {
-					$lab["value"] = "none";
-					$lab["next"] = "asc";
-				}
-			}
-			$result[] = $lab;
-		}
-		return $result;
-	}
-
-	function updateVars($args)
-	{
-		$changes = [];
-		foreach (array_keys($this->vars) as $k) {
-			if (isset($args[$k])) {
-				$val = trim($args[$k]);
-				if (empty($val)) {
-					continue;
-				}
-				switch ($k) {
-					case "stat":
-						$val = preg_replace("/[^a-dx\- ]/", "", trim($val));
-						break;
-					default:
-						$val = strtolower($val) == "asc" ? "ASC" : "DESC";
-						$orders = $this->getVar("orders");
-						if ($k != $orders[0]) {
-							$this->setVar("orders", [$k, $orders[0]]);
-						}
-				}
-				$this->setVar($k, $val);
-				$changes[$k] = $val;
-			}
-		}
-		return $changes;
-	}
-
-	function sqlcondition($fname = "status")
-	{
-		$stat = $this->getVar("stat");
-		if (preg_match("/\s+/", $stat)) {
-			return "$fname IN ('" .
-				join("','", preg_split("/\s+/", $stat)) .
-				"')";
-		}
-		return "$fname=" . icms::$xoopsDB->quoteString($stat);
-	}
-
-	function sqlorder()
-	{
-		$order = [];
-		foreach ($this->getVar("orders") as $name) {
-			$order[] = $name . " " . $this->getVar($name);
-		}
-		if ($order) {
-			return " ORDER BY " . join(",", $order);
-		}
-		return "";
-	}
-
-	function renderStat()
-	{
-		$ctrl = "<select name='stat' onChange='submit();'>\n";
-		$stat = $this->getVar("stat");
-		foreach ($this->combo as $k => $v) {
-			$ck = $v == $stat ? " selected='selected'" : "";
-			$ctrl .= "<option value='$v'$ck>$k</option>\n";
-		}
-		$ctrl .= "</select>";
-		return $ctrl;
-	}
-}
-
 /**
  * Change the status of a message. Only the person in charge may do that (see mod_ccenter_AccessPolicy).
  *
@@ -1197,43 +1024,4 @@ function render_form(&$form, $op)
 	return $template;
 }
 
-class CcBreadcrumbs
-{
-	public $moddir;
-	public $pairs;
-
-	public function __construct()
-	{
-		$this->moddir =
-			ICMS_URL . "/modules/" . icms::$module->getVar("dirname") . "/";
-		$this->pairs = [
-			["name" => icms::$module->getVar("name"), "url" => $this->moddir],
-		];
-	}
-
-	function set($name, $url)
-	{
-		if ($url !== "" && !preg_match("/^\w+:\/\//", $url)) {
-			$url = $this->moddir . $url; // make module-relative links absolute
-		}
-		$this->pairs[] = [
-			"name" => htmlspecialchars(strip_tags($name), ENT_QUOTES),
-			"url" => $url,
-		];
-	}
-
-	function get()
-	{
-		$ret = $this->pairs;
-		$keys = array_keys($ret);
-		$ret[array_pop($keys)]["url"] = "";
-		return $ret;
-	}
-
-	function assign()
-	{
-		global $xoopsTpl;
-		return $xoopsTpl->assign("xoops_breadcrumbs", $this->get());
-	}
-}
 ?>

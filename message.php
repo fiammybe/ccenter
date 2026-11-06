@@ -26,8 +26,8 @@ if ($uid == $data['uid'] && $now>$data['atime']) {
 
 include ICMS_ROOT_PATH."/header.php";
 
-$breadcrumbs = new CcBreadcrumbs();
-$breadcrumbs->set(_MD_CCENTER_RECEPTION, 'reception.php');
+$breadcrumbs = mod_ccenter_Breadcrumbs::forModule();
+$breadcrumbs->add(_MD_CCENTER_RECEPTION, 'reception.php');
 
 $pass = isset($_GET['p'])?$_GET['p']:'';
 $add = $pass?"p=".urlencode($pass):"";
@@ -40,15 +40,15 @@ $data['comment'] = icms_core_DataFilter::checkVar($data['comment'], 'text', 'inp
 $isadmin = $uid && icms::$user->isAdmin(icms::$module->getVar('mid'));
 $title = $data['title'];
 if ($isadmin) {
-    $breadcrumbs->set($title, "reception.php?form=".$data['fidref']);
+    $breadcrumbs->add($title, "reception.php?form=".$data['fidref']);
 } else {
-    $breadcrumbs->set($title, "index.php?form=".$data['fidref']);
+    $breadcrumbs->add($title, "index.php?form=".$data['fidref']);
 }
 if ($values) {	// a message of a form that keeps nothing has no values
     $lab = array_key_first($values);
-    $breadcrumbs->set($lab.': '.$values[$lab], '');
+    $breadcrumbs->add($lab.': '.$values[$lab], '');
 }
-$breadcrumbs->assign();
+$breadcrumbs->assign($xoopsTpl);
 $has_mail = !empty($data['email']);
 $xoopsTpl->assign('token', icms::$security->getTokenHTML());
 $xoopsTpl->assign(

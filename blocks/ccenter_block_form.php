@@ -32,8 +32,7 @@ function b_ccenter_form_edit($options) {
     $ln = "<div><b>"._BL_CCENTER_FORMS_ID."</b> ".
 	"<select name='options[0]'>\n<option value='0'>".
 	_BL_CCENTER_FORMS_FIRST."</option>\n";
-    $res = icms::$xoopsDB->query("SELECT formid,title FROM ".FORMS." WHERE active ORDER BY weight,formid");
-    while (list($id, $title)=icms::$xoopsDB->fetchRow($res)) {
+    foreach (icms_getModuleHandler('form', 'ccenter')->activeChoices() as $id => $title) {
 	$ck = ($id==$oid)?" selected='selected'":"";
 	$ln .= "<option value='$id'$ck>".htmlspecialchars($title)."</option>";
     }

@@ -9,65 +9,39 @@ if (!is_object(icms::$user)) {
     redirect_header(ICMS_URL . "/user.php", 3, _NOPERM);
 }
 
-$id = isset($_GET["form"]) ? intval($_GET["form"]) : 0;
+$id = (int) ($_GET["form"] ?? 0);
 $isadmin = icms::$user->isAdmin(icms::$module->getVar("mid"));
-if ($isadmin) {
-    $cond = "1";
-} else {
-    $cond =
-        "(priuid=" .
-        icms::$user->getVar("uid") .
-        " OR cgroup IN (" .
-        join(",", icms::$user->getGroups()) .
-        "))";
-}
+$form_handler = icms_getModuleHandler("form", "ccenter");
+$rows = $form_handler->getReceptionRows((int) icms::$user->getVar("uid"), icms::$user->getGroups(), $isadmin, $id);
 
-if ($id) {
-    $cond .= " AND formid=" . $id;
-}
-
-$res = icms::$xoopsDB->query(
-    "SELECT f.*,count(msgid) nmsg,max(m.mtime) ltime
- FROM " .
-        FORMS .
-        " f LEFT JOIN " .
-        CCMES .
-        " m ON fidref=formid AND status<>" .
-        icms::$xoopsDB->quoteString(_STATUS_DEL) .
-        "
- WHERE $cond GROUP BY formid",
-);
-
-if (!$res || icms::$xoopsDB->getRowsNum($res) == 0) {
+if (!$rows) {
     redirect_header("index.php", 3, _NOPERM);
     exit();
 }
 
-$breadcrumbs = new CcBreadcrumbs();
-$breadcrumbs->set(_MD_CCENTER_RECEPTION, "reception.php");
+$breadcrumbs = mod_ccenter_Breadcrumbs::forModule();
+$breadcrumbs->add(_MD_CCENTER_RECEPTION, "reception.php");
 
-if (icms::$xoopsDB->getRowsNum($res) > 1) {
+if (count($rows) > 1) {
     include ICMS_ROOT_PATH . "/header.php";
     $xoopsOption["template_main"] = "ccenter_reception.html";
-    $breadcrumbs->assign();
+    $breadcrumbs->assign($xoopsTpl);
     $forms = [];
     $member_handler = icms::handler('icms_member');
     $groups = $member_handler->getGroupList(
         new icms_db_criteria_Item("groupid", ICMS_GROUP_ANONYMOUS, "!="),
     );
-    while ($form = icms::$xoopsDB->fetchArray($res)) {
+    foreach ($rows as $form) {
         $form["title"] = htmlspecialchars($form["title"]);
         $form["ltime"] = $form["ltime"] ? formatTimestamp($form["ltime"]) : "";
         if ($form["priuid"]) {
             if ($form["priuid"] < 0) {
-                $form["contact"] = "[" . $groups[-$form["priuid"]] . "]";
+                $form["contact"] = "[" . ($groups[-$form["priuid"]] ?? "") . "]";
             } else {
-                $form["contact"] = icms_member_user_Handler::getUserLink(
-                    $form["priuid"],
-                );
+                $form["contact"] = icms_member_user_Handler::getUserLink($form["priuid"]);
             }
         } elseif ($form["cgroup"]) {
-            $form["contact"] = "[" . $groups[$form["cgroup"]] . "]";
+            $form["contact"] = "[" . ($groups[$form["cgroup"]] ?? "") . "]";
         } else {
             $form["contact"] = _MD_CONTACT_NOTYET;
         }
@@ -79,7 +53,7 @@ if (icms::$xoopsDB->getRowsNum($res) > 1) {
 }
 
 // check access permition
-$form = icms::$xoopsDB->fetchArray($res);
+$form = $rows[0];
 if (!cc_check_perm($form)) {
     redirect_header("index.php", 3, _NOPERM);
     exit();
@@ -92,10 +66,10 @@ $xoopsTpl->assign("forms", []); // single form: the template shows its message l
 
 $id = $form["formid"];
 $items = get_form_attribute($form["defs"]);
-$breadcrumbs->set(htmlspecialchars($form["title"]), "reception.php?formid=$id");
-$breadcrumbs->assign();
+$breadcrumbs->add($form["title"], "reception.php?formid=$id");
+$breadcrumbs->assign($xoopsTpl);
 
-$start = isset($_GET["start"]) ? intval($_GET["start"]) : 0;
+$start = max(0, (int) ($_GET["start"] ?? 0));
 if ($form["custom"]) {
     $reg = [
         "/\\[desc\\](.*)\\[\/desc\\]/sU",
@@ -135,34 +109,23 @@ foreach ($form["items"] as $item) {
     }
 }
 
-$cond = "fidref=$id AND status<>" . icms::$xoopsDB->quoteString(_STATUS_DEL);
-$res = icms::$xoopsDB->query("SELECT count(*) FROM " . CCMES . " WHERE $cond");
-[$count] = icms::$xoopsDB->fetchRow($res);
-$max = icms::$module->config["max_lists"];
+$message_handler = icms_getModuleHandler("message", "ccenter");
+$touid = ($form["priuid"] < 0 && !$isadmin) ? (int) icms::$user->getVar("uid") : 0;
+$count = $message_handler->countForForm($id, $touid);
+$max = (int) icms::$module->config["max_lists"];
 $args = preg_replace("/start=\\d+/", "", $_SERVER["QUERY_STRING"]);
 $nav = new icms_view_PageNav($count, $max, $start, "start", $args);
 $xoopsTpl->assign("pagenav", $count > $max ? $nav->renderNav() : "");
 
-if ($form["priuid"] < 0 && !$isadmin) {
-    $cond .= " AND touid=" . icms::$user->getVar("uid");
-    $form["description"] = str_replace(
-        "{TO_NAME}",
-        icms::$user->getVar("name"),
-        $form["description"],
-    );
+if ($touid) {
+    $form["description"] = str_replace("{TO_NAME}", icms::$user->getVar("name"), $form["description"]);
 }
 
 $xoopsTpl->assign("form", $form);
-
-$res = icms::$xoopsDB->query(
-    "SELECT * FROM " . CCMES . " WHERE $cond ORDER BY msgid DESC",
-    $max,
-    $start,
-);
 $xoopsTpl->assign("export_range", $export_range);
 
 $mlist = [];
-while ($data = icms::$xoopsDB->fetchArray($res)) {
+foreach ($message_handler->listForForm($id, $touid, $max, $start) as $data) {
     $values = mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray();
     if ($mpos >= 0 && !isset($values[$mlab])) {
         array_splice($values, $mpos, 0, [$data["email"]]);
@@ -171,7 +134,7 @@ while ($data = icms::$xoopsDB->fetchArray($res)) {
     $data["uname"] = icms::$user->getUnameFromId($data["uid"]);
     $data["mdate"] = formatTimestamp($data["mtime"]);
     $data["cdate"] = formatTimestamp($data["ctime"]);
-    $data["stat"] = $msg_status[$data["status"]];
+    $data["stat"] = $msg_status[$data["status"]] ?? "";
     $mlist[] = $data;
 }
 

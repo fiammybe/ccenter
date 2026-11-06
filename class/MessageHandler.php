@@ -169,4 +169,150 @@ class mod_ccenter_MessageHandler extends icms_ipf_Handler
         $msg = $this->find((int) $msgid);
         return $msg ? (bool) $this->delete($msg, true) : true;
     }
+
+    /** Sort keys the list pages allow (request name => column). */
+    private static $sortColumns = ['mtime' => 'mtime', 'formid' => 'fidref', 'uid' => 'uid', 'touid' => 'touid', 'status' => 'status', 'msgid' => 'msgid'];
+
+    private function listBase($column, $uid, $statuses, $formId)
+    {
+        $criteria = $this->listCriteria($statuses);
+        $criteria->add(new icms_db_criteria_Item($column === 'touid' ? 'touid' : 'uid', (int) $uid));
+        if ($formId) {
+            $criteria->add(new icms_db_criteria_Item('fidref', (int) $formId));
+        }
+        return $criteria;
+    }
+
+    /**
+     * Messages of one sender (column "uid") or one person in charge (column "touid") for the list pages.
+     *
+     * @param string $column   uid or touid
+     * @param int    $uid
+     * @param string $statuses status codes separated by spaces
+     * @param int    $formId   0 = every form
+     * @param array  $orders   list of [sort key, ASC|DESC]; keys outside the whitelist are ignored
+     * @return int
+     */
+    public function countListFor($column, $uid, $statuses, $formId = 0)
+    {
+        return (int) $this->getCount($this->listBase($column, $uid, $statuses, $formId));
+    }
+
+    /** @return array rows (with the title of the form) */
+    public function listFor($column, $uid, $statuses, $formId, array $orders, $limit, $start)
+    {
+        $criteria = $this->listBase($column, $uid, $statuses, $formId);
+        $this->applyOrders($criteria, $orders);
+        $criteria->setLimit((int) $limit);
+        $criteria->setStart((int) $start);
+        return $this->rowsWithTitle($this->getObjects($criteria));
+    }
+
+    private function applyOrders($criteria, array $orders)
+    {
+        $parts = [];
+        foreach ($orders as $order) {
+            [$key, $dir] = $order;
+            if (isset(self::$sortColumns[$key])) {
+                $parts[] = self::$sortColumns[$key] . ' ' . (strtoupper((string) $dir) === 'DESC' ? 'DESC' : 'ASC');
+            }
+        }
+        if (!$parts) {
+            $parts[] = 'msgid DESC';
+        }
+        $last = array_pop($parts);
+        [$col, $dir] = explode(' ', $last);
+        $parts[] = $col;
+        $criteria->setSort(implode(', ', $parts));
+        $criteria->setOrder($dir);
+    }
+
+    private function rowsWithTitle(array $objects)
+    {
+        $titles = $this->formTitles();
+        $rows = [];
+        foreach ($objects as $msg) {
+            $row = $msg->toRow();
+            $row['title'] = $titles[(int) $row['fidref']] ?? '';
+            $rows[] = $row;
+        }
+        return $rows;
+    }
+
+    private function formCriteria($formId, $touid)
+    {
+        $criteria = new icms_db_criteria_Compo(new icms_db_criteria_Item('fidref', (int) $formId));
+        $criteria->add(new icms_db_criteria_Item('status', mod_ccenter_Status::DEL, '<>'));
+        if ($touid) {
+            $criteria->add(new icms_db_criteria_Item('touid', (int) $touid));
+        }
+        return $criteria;
+    }
+
+    /** Number of messages of a form that are not deleted (optionally only those of one person in charge). */
+    public function countForForm($formId, $touid = 0)
+    {
+        return (int) $this->getCount($this->formCriteria($formId, $touid));
+    }
+
+    /** @return array message rows of a form, newest first */
+    public function listForForm($formId, $touid, $limit, $start)
+    {
+        $criteria = $this->formCriteria($formId, $touid);
+        $criteria->setSort('msgid');
+        $criteria->setOrder('DESC');
+        $criteria->setLimit((int) $limit);
+        $criteria->setStart((int) $start);
+        return $this->rowsWithTitle($this->getObjects($criteria));
+    }
+
+    /**
+     * Messages for a person in charge of forms with the given statuses (the "receipt" block): messages of forms
+     * where the user is the contact person, or where nobody is.
+     *
+     * @return array rows with the title of the form, ordered by status and modification time
+     */
+    public function receiptFor($uid, array $statuses, $dir, $limit)
+    {
+        $codes = array_values(array_filter($statuses, ['mod_ccenter_Status', 'isValid']));
+        if (!$codes) {
+            return [];
+        }
+        $forms = [];
+        foreach (icms_getModuleHandler('form', 'ccenter')->getObjects(new icms_db_criteria_Item('priuid', '(' . (int) $uid . ',0)', 'IN')) as $form) {
+            $forms[] = (int) $form->getVar('formid', 'n');
+        }
+        if (!$forms) {
+            return [];
+        }
+        $criteria = new icms_db_criteria_Compo(new icms_db_criteria_Item('fidref', '(' . implode(',', $forms) . ')', 'IN'));
+        $criteria->add(new icms_db_criteria_Item('status', "('" . implode("','", $codes) . "')", 'IN'));
+        $criteria->setSort('status, mtime');
+        $criteria->setOrder($dir === 'asc' ? 'ASC' : 'DESC');
+        $criteria->setLimit((int) $limit);
+        return $this->rowsWithTitle($this->getObjects($criteria));
+    }
+
+    /** Is the message replied, and does the user (or the one-time password) belong to it? */
+    public function isEvaluable($msgid, $uid, $pass)
+    {
+        $msg = $this->find($msgid);
+        if (!$msg || $msg->getVar('status', 'n') !== mod_ccenter_Status::REPLY) {
+            return false;
+        }
+        return $pass !== ''
+            ? hash_equals((string) $msg->getVar('onepass', 'n'), (string) $pass)
+            : (int) $msg->getVar('uid', 'n') === (int) $uid;
+    }
+
+    /** The message id when the comment belongs to that message (of this module), else 0. */
+    public function commentItem($comId, $msgid)
+    {
+        $module = icms::handler('icms_module')->getByDirname('ccenter');
+        $comment = icms::handler('icms_data_comment')->get((int) $comId);
+        if ($comment && (int) $comment->getVar('com_modid') === (int) $module->getVar('mid') && (int) $comment->getVar('com_itemid') === (int) $msgid) {
+            return (int) $msgid;
+        }
+        return 0;
+    }
 }
