@@ -19,8 +19,8 @@
         }
     },
     "scripts": {
-        "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './tests/.work/*' -print0 | xargs -0 -n1 php -l",
-        "compat": "phpcs -p --standard=PHPCompatibility --runtime-set testVersion 8.2- --extensions=php --ignore=vendor,tests/.work .",
+        "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './tests/.work/*' -not -path './impresscms/*' -print0 | xargs -0 -n1 php -l",
+        "compat": "phpcs -p --standard=PHPCompatibility --runtime-set testVersion 8.2- --extensions=php --ignore=vendor,tests/.work,impresscms .",
         "stan": "phpstan analyse --memory-limit=1G",
         "test": "phpunit"
     }
