@@ -2,6 +2,8 @@
 // ccenter common functions
 // $Id: functions.php 1058 2013-08-25 09:15:13Z st.flohrer@gmail.com $
 
+require_once __DIR__ . "/class/autoload.php";
+
 // using tables
 define("FORMS", icms::$xoopsDB->prefix("ccenter_form"));
 define("CCMES", icms::$xoopsDB->prefix("ccenter_message"));
@@ -9,11 +11,11 @@ define("CCLOG", icms::$xoopsDB->prefix("ccenter_log"));
 
 //include_once ICMS_ROOT_PATH."/class/template.php";
 
-define("_STATUS_NONE", "-");
-define("_STATUS_ACCEPT", "a");
-define("_STATUS_REPLY", "b");
-define("_STATUS_CLOSE", "c");
-define("_STATUS_DEL", "x");
+define("_STATUS_NONE", mod_ccenter_Status::NONE);
+define("_STATUS_ACCEPT", mod_ccenter_Status::ACCEPT);
+define("_STATUS_REPLY", mod_ccenter_Status::REPLY);
+define("_STATUS_CLOSE", mod_ccenter_Status::CLOSE);
+define("_STATUS_DEL", mod_ccenter_Status::DEL);
 
 define("_DB_STORE_LOG", 0); // logging only in db
 define("_DB_STORE_YES", 1); // store information in db
@@ -30,13 +32,7 @@ if (!defined("_CC_STATUS_NONE")) {
 }
 global $msg_status, $export_range;
 
-$msg_status = [
-	_STATUS_NONE => _CC_STATUS_NONE,
-	_STATUS_ACCEPT => _CC_STATUS_ACCEPT,
-	_STATUS_REPLY => _CC_STATUS_REPLY,
-	_STATUS_CLOSE => _CC_STATUS_CLOSE,
-	_STATUS_DEL => _CC_STATUS_DEL,
-];
+$msg_status = mod_ccenter_Status::labels();
 
 $export_range = [
 	"m0" => _CC_EXPORT_THIS_MONTH,
@@ -80,14 +76,14 @@ function get_attr_value($pri, $name = null, $value = null)
 			$configs = is_object($module) ? $module->config : [];
 		}
 		$def_attr = $configs["def_attrs"] ?? "";
-		foreach (unserialize_vars($def_attr) as $k => $v) {
+		foreach (mod_ccenter_OptionVars::parse($def_attr) as $k => $v) {
 			$defs[$k] = $v;
 		}
 	}
 	if ($name == null && !is_null($pri)) {
 		// override values
 		if (!is_array($pri)) {
-			$pri = unserialize_vars($pri);
+			$pri = mod_ccenter_OptionVars::parse($pri);
 		}
 		foreach ($pri as $k => $v) {
 			$defs[$k] = $v;
@@ -149,149 +145,25 @@ function cc_display_values($vals, $items, $msgid = 0, $add = "")
 	return $values;
 }
 
-function cc_csv_parse($ln)
-{
-	$result = [];
-	$rec = [];
-	while (
-		$ln &&
-		preg_match('/^("[^"]*(?:""[^"]*)*"|[^,\t\r\n]*)[,\t]?/', $ln, $d)
-	) {
-		$rec[] = preg_replace(
-			'/""/',
-			'"',
-			preg_replace('/"([^"]*)"$/s', '$1', $d[1]),
-		);
-		$ln = substr($ln, strlen($d[0]));
-		if (preg_match("/^[\r\n]/", $ln)) {
-			$result[] = $rec;
-			$rec = [];
-			$ln = preg_replace("/^[\r\n]\n?/", "", $ln);
-		}
-	}
-	if (count($rec)) {
-		$result[] = $rec;
-	}
-	return $result;
-}
-
+/**
+ * The items of a form definition in the shape the templates and the posting code use.
+ *
+ * @param string $defs   stored definition (JSON, or the earlier line based text)
+ * @param string $labels option variables (JSON or key=value text) overriding the item labels
+ * @param string $prefix prefix of the generated input names
+ * @return array
+ */
 function get_form_attribute($defs, $labels = "", $prefix = "cc")
 {
-	$labs = unserialize_vars($labels);
-	$num = 0;
-	$result = [];
-	$types = [
-		"text",
-		"checkbox",
-		"radio",
-		"textarea",
-		"select",
-		"hidden",
-		"const",
-		"mail",
-		"file",
-		"date",
-	];
-	foreach (cc_csv_parse($defs) as $opts) {
-		if (empty($opts)) {
-			continue;
-		}
-		if (preg_match("/^#/", $opts[0])) {
-			$result[] = ["comment" => substr(join(",", $opts), 1)];
-			continue;
-		}
-		$name = array_shift($opts);
-		if (preg_match('/=(.*)$/', $name, $d)) {
-			// use alternative label
-			$label = $d[1];
-			$name = preg_replace('/=(.*)$/', "", $name);
-		} else {
-			$label = isset($labs[$name]) ? $labs[$name] : $name;
-		}
-		$type = "text";
-		$comment = "";
-		$attr = [];
-		if (count($opts) && in_array($opts[0], $types)) {
-			$type = array_shift($opts);
-		}
-		if (preg_match('/\*$/', $name)) {
-			// syntax convention
-			$attr["check"] = "require";
-			$name = preg_replace('/\s*\*$/', "", $name);
-			if (defined("_MD_REQUIRE_MARK")) {
-				$label = preg_replace('/\s*\*$/', _MD_REQUIRE_MARK, $label);
-			}
-		}
-		while (
-			isset($opts[0]) &&
-			(preg_match(
-				'/^(size|rows|maxlength|cols|prop)=(\d+)$/',
-				$opts[0],
-				$d,
-			) ||
-				preg_match('/^(check)=(.+)$/', $opts[0], $d))
-		) {
-			array_shift($opts);
-			$attr[$d[1]] = $d[2];
-		}
-		$options = [];
-		$defs = [];
-		if (count($opts)) {
-			while (count($opts) && !preg_match("/^\s*#/", $opts[0])) {
-				$v = array_shift($opts);
-				$sv = preg_split("/=/", $v, 2);
-				if (count($sv) > 1) {
-					$k = strip_tags($sv[0]);
-					$sk = preg_replace('/\+$/', "", $k); // real value
-					if ($k != $sk) {
-						$defs[] = $sk;
-					} // defaults
-					$options[$sk] = $sv[1];
-				} else {
-					$k = strip_tags($v);
-					$sk = preg_replace('/\+$/', "", $k); // real value
-					if ($k != $sk) {
-						$defs[] = $sk;
-					} // defaults
-					$options[$sk] = preg_replace('/\+$/', "", $v);
-				}
-			}
-			if (count($opts)) {
-				$opts[0] = preg_replace("/^\s*#/", "", $opts[0]);
-				$comment = join(",", $opts);
-			}
-		}
-		if ($type == "radio") {
-			$defs = $defs ? $defs[0] : "";
-		} elseif ($type != "checkbox") {
-			$defs = eval_user_value(join(",", $options));
-		}
-		if ($type == "date") {
-			if (empty($defs)) {
-				$defs = formatTimestamp(time(), "Y-m-d");
-			}
-		} elseif ($type == "textarea") {
-			$attr["rows"] = get_attr_value($attr, "rows");
-			$attr["cols"] = get_attr_value($attr, "cols");
-		} else {
-			$attr["size"] = get_attr_value($attr, "size");
-			$attr["maxlength"] = get_attr_value($attr, "maxlength");
-		}
-		$attr += ["check" => ""]; // templates read attr.check for every item
-
-		$fname = $prefix . ++$num;
-		$result[$name] = [
-			"name" => $name,
-			"label" => $label,
-			"field" => $fname,
-			"options" => $options,
-			"type" => $type,
-			"comment" => $comment,
-			"attr" => $attr,
-			"default" => $defs,
-		];
+	try {
+		return mod_ccenter_FormSchema::fromStored($defs)->items(
+			mod_ccenter_OptionVars::parse($labels),
+			$prefix,
+		);
+	} catch (InvalidArgumentException $e) {
+		trigger_error("ccenter: invalid form definition: " . $e->getMessage(), E_USER_WARNING);
+		return [];
 	}
-	return $result;
 }
 
 function assign_post_values(&$items)
@@ -506,29 +378,10 @@ function assign_form_widgets(&$items, $conf = false)
 	return $updates;
 }
 
+/** Replace {X_<USERFIELD>} placeholders with data of the current user (plain string replacement). */
 function eval_user_value($str)
 {
-	static $defuser;
-	if (empty($defuser)) {
-		$defuser = [];
-		$user = is_object(icms::$user)
-			? icms::$user
-			: new icms_member_user_Object();
-		$keys = array_keys($user->getVars());
-		if (is_object(icms::$user)) {
-			foreach ($keys as $k) {
-				$defuser["{X_" . strtoupper($k) . "}"] = icms::$user->getVar(
-					$k,
-					"e",
-				);
-			}
-		} else {
-			foreach ($keys as $k) {
-				$defuser["{X_" . strtoupper($k) . "}"] = "";
-			}
-		}
-	}
-	return str_replace(array_keys($defuser), $defuser, $str);
+	return mod_ccenter_PlaceholderResolver::resolveForCurrentUser($str);
 }
 
 function cc_make_widget($item, $vars = null)
@@ -583,69 +436,18 @@ if (!function_exists("unserialize_vars")) {
 	// expand: label=value[,\n](label=value...)
 	function unserialize_vars($text, $rev = false)
 	{
-		$text = (string) $text;
-		if (preg_match("/^\w+: /", $text)) {
-			return unserialize_text($text);
-		}
-		$array = [];
-		$text = ltrim($text);
-		$pat = ['/""/', '/^"(.*)"$/'];
-		$rep = ['"', '$1'];
-		$delm = preg_match('/[\n\r]/', $text) ? '\n\r' : ',\n\r'; // allow comma format
-		while (
-			$text &&
-			preg_match("/^(\"[^\"]*\"|[^\"$delm]*)*[$delm]?/", $text, $d)
-		) {
-			$ln = preg_replace("/[\\s$delm]\$/", "", $d[0]);
-			$text = ltrim(substr($text, strlen($d[0])));
-			if (preg_match('/^\s*([^=]+)\s*=\s*(.*)$/', $ln, $d)) {
-				if (preg_match("/^#/", $d[1])) {
-					continue;
-				}
-				if ($rev) {
-					$k = $d[2];
-					$v = $d[1];
-				} else {
-					$k = $d[1];
-					$v = $d[2];
-				}
-				$array[$k] = preg_replace($pat, $rep, $v);
-			}
-		}
-		return $array;
+		return mod_ccenter_LegacyText::unserializeVars($text, $rev);
 	}
 }
 if (!function_exists("serialize_text")) {
 	function serialize_text($array)
 	{
-		$text = "";
-		foreach ($array as $name => $val) {
-			if (is_array($val)) {
-				$val = join(", ", $val);
-			}
-			if (preg_match('/\n/', $val)) {
-				$val = preg_replace('/\n\r?/', "\n\t", $val);
-			}
-			$text .= "$name: $val\n";
-		}
-		return $text;
+		return mod_ccenter_LegacyText::serializeText($array);
 	}
 
 	function unserialize_text($text)
 	{
-		$array = [];
-		$last = null; // name of the entry that collects continuation lines
-		foreach (preg_split("/\r?\n/", (string) $text) as $ln) {
-			if (preg_match("/^\s/", $ln)) {
-				if ($last !== null) {
-					$array[$last] .= "\n" . substr($ln, 1);
-				}
-			} elseif (preg_match('/^([^:]*):\s?(.*)$/', $ln, $d)) {
-				$last = $d[1];
-				$array[$last] = $d[2];
-			}
-		}
-		return $array;
+		return mod_ccenter_LegacyText::unserializeText($text);
 	}
 }
 
