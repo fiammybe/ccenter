@@ -163,7 +163,7 @@ $xoopsTpl->assign("export_range", $export_range);
 
 $mlist = [];
 while ($data = icms::$xoopsDB->fetchArray($res)) {
-    $values = unserialize_text($data["body"]);
+    $values = mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray();
     if ($mpos >= 0 && !isset($values[$mlab])) {
         array_splice($values, $mpos, 0, [$data["email"]]);
     }

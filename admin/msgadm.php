@@ -252,7 +252,7 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
             $box = "<input type='checkbox' name='ids[]' value='$id'/>";
             $ope = "<a href='$msg'>" . _AM_DETAIL . "</a>";
             $ope .= " | <a href='?msgid=$id'>" . _EDIT . "</a>";
-            $vals = unserialize_text($data["body"]);
+            $vals = mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray();
             $fval = preg_replace('/[\n\r].*$/', "...", array_shift($vals));
             $slen = 30;
             if (strlen($fval) > $slen) {
@@ -378,7 +378,7 @@ function msg_detail($msgid)
     }
     echo "<table class='outer' cellspacing='1'>\n";
     $n = 0;
-    foreach (unserialize_text($data["body"]) as $k => $v) {
+    foreach (mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray() as $k => $v) {
         $bg = $n++ % 2 ? "even" : "odd";
         $k = htmlspecialchars($k);
         $v = nl2br(htmlspecialchars($v));

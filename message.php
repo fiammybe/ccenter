@@ -21,7 +21,7 @@ if ($uid && $uid == $data['touid'] && $data['status']==_STATUS_NONE) {
 // recording contactee access time
 $now = time();
 if ($uid == $data['uid'] && $now>$data['atime']) {
-    icms::$xoopsDB->queryF("UPDATE ".CCMES." SET atime=$now WHERE msgid=$msgid");
+    icms_getModuleHandler('message', 'ccenter')->updateFields($msgid, array('atime' => $now));
 }
 
 include ICMS_ROOT_PATH."/header.php";
@@ -32,10 +32,10 @@ $breadcrumbs->set(_MD_CCENTER_RECEPTION, 'reception.php');
 $pass = isset($_GET['p'])?$_GET['p']:'';
 $add = $pass?"p=".urlencode($pass):"";
 $to_uname = icms_member_user_Object::getUnameFromId($data['touid']);
-$res = icms::$xoopsDB->query("SELECT * FROM ".FORMS." WHERE formid=".$data['fidref']);
-$form = icms::$xoopsDB->fetchArray($res);
+$form = icms_getModuleHandler('form', 'ccenter')->find($data['fidref'])->toRow();
 $items = get_form_attribute($form['defs']);
-$values = cc_display_values(unserialize_text($data['body']), $items, $data['msgid'], $add);
+$body = mod_ccenter_MessageBody::fromStored($data['body']);
+$values = cc_display_values($body->toLegacyArray(), $items, $data['msgid'], $add, $body->displayLabels());
 $data['comment'] = icms_core_DataFilter::checkVar($data['comment'], 'text', 'input');
 $isadmin = $uid && icms::$user->isAdmin(icms::$module->getVar('mid'));
 $title = $data['title'];

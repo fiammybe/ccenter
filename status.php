@@ -6,31 +6,32 @@ include "../../mainfile.php";
 include "functions.php";
 
 $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
-$msgid = (int) $_POST['id'];
+$msgid = (int) ($_POST['id'] ?? 0);
 
 $redirect = "message.php?id=".$msgid;
 $clean_op = (isset($_POST['op'])) ? trim(filter_input(INPUT_POST, 'op')) : '';
 
+$message_handler = icms_getModuleHandler('message', 'ccenter');
+
 if (!empty($_POST['eval'])) {	// evaluate at last
-    $eval = (int) $_POST['eval'];
-    $pass = icms_core_DataFilter::stripSlashesGPC($_POST['pass']);
-    $com = icms_core_DataFilter::stripSlashesGPC($_POST['comment']);
+    $eval = max(1, min(5, (int) $_POST['eval']));
+    $pass = icms_core_DataFilter::stripSlashesGPC($_POST['pass'] ?? '');
+    $com = icms_core_DataFilter::stripSlashesGPC($_POST['comment'] ?? '');
     $now = time();
-	
-    if (is_cc_evaluate($msgid, $uid, $pass)) {
-	$res = icms::$xoopsDB->query("SELECT fidref,status FROM ".CCMES." WHERE msgid=$msgid");
-	list($formid, $s) = icms::$xoopsDB->fetchRow($res);
-	$values = array("value=$eval",
-			"comment=".icms::$xoopsDB->quoteString($com),
-			"comtime=$now", "atime=$now", "mtime=$now",
-			"status=".icms::$xoopsDB->quoteString(_STATUS_CLOSE));
-	icms::$xoopsDB->queryF("UPDATE ".CCMES." SET ".join(',',$values)." WHERE msgid=$msgid");
+
+    $message = is_cc_evaluate($msgid, $uid, $pass) ? $message_handler->find($msgid) : null;
+    if ($message) {
+	$formid = (int) $message->getVar('fidref', 'n');
+	$s = $message->getVar('status', 'n');
+	$message_handler->updateFields($msgid, array(
+	    'value' => $eval, 'comment' => $com, 'comtime' => $now, 'atime' => $now, 'mtime' => $now,
+	    'status' => _STATUS_CLOSE));
 	$log = _MD_EVALS." ($eval)";
 	$log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[_STATUS_CLOSE]);
 	$evalmsg = _MD_EVALS." ($eval)\n$com";
 	$tags = array('X_COMMENT_URL'=>ICMS_URL."/modules/".basename(dirname(__FILE__))."/message.php?id=$msgid\n\n".$evalmsg);
-	$notification_handler =& icms::handler('icms_data_notification');
-		$notification_handler->triggerEvent('message', $msgid, 'comment', $tags);
+	$notification_handler = icms::handler('icms_data_notification');
+	$notification_handler->triggerEvent('message', $msgid, 'comment', $tags);
 	cc_log_message($formid, $log, $msgid);
 	redirect_header($redirect, 1, _MD_EVAL_THANKYOU);
     } else {
@@ -38,10 +39,10 @@ if (!empty($_POST['eval'])) {	// evaluate at last
     }
 } elseif (!empty($_POST['status'])) {
     $stat = icms_core_DataFilter::stripSlashesGPC($_POST['status']);
-    $res = icms::$xoopsDB->query("SELECT fidref FROM ".CCMES." WHERE msgid = $msgid");
-    list($fid) = icms::$xoopsDB->fetchRow($res);
+    $message = $message_handler->find($msgid);
+    $fid = $message ? (int) $message->getVar('fidref', 'n') : 0;
     if (change_message_status($msgid, $uid, $stat)) {
-		if ($stat=='x') {
+		if ($stat==_STATUS_DEL) {
 			$redirect = "reception.php?form=$fid"; // delete the message
 		}
 		redirect_header($redirect, 1, _MD_UPDATE_STATUS);
@@ -49,23 +50,26 @@ if (!empty($_POST['eval'])) {	// evaluate at last
     }
     redirect_header($redirect, 3, _MD_UPDATE_FAILED);
 } else {
-    switch ($_POST['op']) {
+    switch ($_POST['op'] ?? '') {
     case 'myself':
-	$res = icms::$xoopsDB->query("SELECT fidref,status,title FROM ".CCMES." LEFT JOIN ".FORMS." ON formid=fidref WHERE msgid=$msgid AND touid=0");
-	if ($res && icms::$xoopsDB->getRowsNum($res)) {
-	    list($fid, $s, $title) = icms::$xoopsDB->fetchRow($res);
-	    $now = time();
-	    $set = "SET mtime=$now, touid=$uid, status=".icms::$xoopsDB->quoteString('a');
-	    $res = icms::$xoopsDB->queryF("UPDATE ".CCMES." $set WHERE msgid=$msgid");
+	// a member of the contact group (or an administrator) takes over a message nobody is in charge of
+	$data = $uid ? $message_handler->getRowWithForm($msgid) : null;
+	$allowed = $data && $data['touid'] == 0 && (
+	    icms::$user->isAdmin(icms::$module->getVar('mid')) ||
+	    ($data['cgroup'] && in_array($data['cgroup'], icms::$user->getGroups())));
+	if ($allowed) {
+	    $fid = $data['fidref'];
+	    $s = $data['status'];
+	    $message_handler->updateFields($msgid, array(
+		'mtime' => time(), 'touid' => $uid, 'status' => _STATUS_ACCEPT));
 	    $log = sprintf(_CC_LOG_TOUSER, _CC_USER_NONE, icms::$user->getVar('uname'));
-	    $log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status['a']);
-	    $notification_handler =& icms::handler('icms_data_notification');
-				$notification_handler->subscribe('message', $msgid, 'comment');
-				//$notification_handler->subscribe('message', $msgid, 'status');
+	    $log .= "\n".sprintf(_CC_LOG_STATUS, $msg_status[$s], $msg_status[_STATUS_ACCEPT]);
+	    $notification_handler = icms::handler('icms_data_notification');
+	    $notification_handler->subscribe('message', $msgid, 'comment');
 
 	    cc_log_message($fid, $log, $msgid);
 	}
-	
+
 	break;
     }
     redirect_header($redirect, 1, _MD_UPDATE_STATUS);

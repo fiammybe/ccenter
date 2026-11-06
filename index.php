@@ -10,42 +10,28 @@ $op = "form";
 
 $id= isset($_GET['form']) ? (int) $_GET['form'] : 0;
 
-$cond = "active";
-if (is_object(icms::$user)) {
-    $conds = array();
-    foreach (icms::$user->getGroups() as $gid) {
-		$conds[] = "grpperm LIKE '%|$gid|%'";
-    }
-    if ($conds) $cond .= " AND (".join(' OR ', $conds).")";
-} else {
-    $cond .= " AND grpperm LIKE '%|".ICMS_GROUP_ANONYMOUS."|%'";
-}
-if ($id) $cond .= " AND formid=$id";
-$res = icms::$xoopsDB->query("SELECT * FROM ".FORMS." WHERE $cond ORDER BY weight,formid");
+$groups = is_object(icms::$user) ? icms::$user->getGroups() : array(ICMS_GROUP_ANONYMOUS);
+$form_handler = icms_getModuleHandler('form', 'ccenter');
+$accessible = $form_handler->getAccessible($groups, $id);
 
-if (!$res) {
-    redirect_header('index.php', 3, _NOPERM);
-    exit;
-}
-
-//$breadcrumbs = new icms_view_Breadcrumb();
-
-if (icms::$xoopsDB->getRowsNum($res)!=1) {
+if (count($accessible) != 1) {
     include ICMS_ROOT_PATH."/header.php";
     $xoopsOption['template_main'] = "ccenter_index.html";
     $forms = array();
-    while ($form=icms::$xoopsDB->fetchArray($res)) {
+    foreach ($accessible as $form_obj) {
+	$form = $form_obj->toRow();
 	if ($form['priuid']<0) continue; // need uid setting
+	$form['title'] = htmlspecialchars($form['title']);
 	$forms[] = $form;
     }
     $xoopsTpl->assign('forms', $forms);
-//$breadcrumbs->assign();
     include ICMS_ROOT_PATH."/footer.php";
     exit;
 }
 
 if (isset($_POST['op']) && !isset($_POST['edit'])) $op = $_POST['op'];
-$form = icms::$xoopsDB->fetchArray($res);
+$form_obj = reset($accessible);
+$form = $form_obj->toRow();
 get_attr_value($form['optvars']); // set default values
 $items = get_form_attribute($form['defs']);
 if ($form['priuid']< 0) {	// assign group member
@@ -104,7 +90,7 @@ function store_message($items, $form) {
 	global $icmsConfig;
 
     $uid = is_object(icms::$user)?icms::$user->getVar('uid'):0;
-    $store = $form['store'];
+    $store = (int) $form['store'];
     if ($store==_DB_STORE_NONE) {
 	$showaddr = true;	// no store to need show address
     } else {
@@ -112,30 +98,29 @@ function store_message($items, $form) {
     }
     $from = $email = "";
     $attach = array();
-    $vals = array();
+    $fields = array();	// what is stored in the message body
     $rtext = '';
     foreach ($items as $item) {
 	if (empty($item['name'])) continue;
 	$name = $item['name'];
 	$val = $item['value'];
-	$vals[$name] = $val;
+	$raw = $val;		// as submitted
 	$opts = &$item['options'];
+	$hidden = false;	// the first email address is not stored when it is not to be shown
 	switch ($item['type']) {
 		case 'mail':
 		    if (empty($email)) { // save first email for contact
-			$email = $vals[$name];
-			$mail_name = $name;
+			$email = $val;
 			if ($showaddr) {
 			    $from = $email;
-			    break;
+			} else {
+			    $hidden = true;
 			}
-			continue 2;		/* PHP switch catch continue! */
 		    }
 		    break;
 		case 'file':
-		    $val = $vals[$name];
 		    if ($val) {
-			$vals[$name] = "file=".$val;
+			$raw = array('file' => $val);
 			$attach[] = $val;
 		    }
 		    break;
@@ -150,12 +135,18 @@ function store_message($items, $form) {
 			$val = join(', ', $val);
 			break;
 	}
+	if ($hidden) continue;
+	$label = strip_tags($item['label']);
+	$fields[] = array(
+	    'key' => $name,
+	    'label' => preg_replace('/\s*\*$/', '', $label),	// without the "required" mark
+	    'type' => $item['type'],
+	    'value' => $raw,
+	    'display' => is_array($val) ? join(', ', $val) : (string) $val,
+	);
 	if (!empty($val) && preg_match('/\n/', $val)) $val = "\n\t".preg_replace('/\n/', "\n\t", $val);
-	$rtext .= strip_tags($item['label']).": $val\n";
+	$rtext .= $label.": $val\n";
     }
-    // remove if not show/store email address in database
-    if (!$showaddr && isset($mail_name)) unset($vals[$mail_name]);
-    $text = serialize_text($vals);		    // store value
     $onepass = ($uid==0)?cc_onetime_ticket($email):"";
     if ($form['priuid'] < 0) {
 	$touid = empty($form['priuser'])?0:$form['priuser']['uid'];
@@ -163,21 +154,22 @@ function store_message($items, $form) {
 	$touid = $form['priuid'];
     }
     $now = time();
-    $values = array(
-	'uid'=>$uid, 'touid'=>$touid,
-	'ctime'=>$now, 'mtime'=>$now, 'atime'=>$now,
-	'fidref'=>$form['formid'],
-	'email'=>icms::$xoopsDB->quoteString($email),
-	'onepass'=>icms::$xoopsDB->quoteString($onepass));
     $parg = $onepass?"&p=".urlencode($onepass):"";
-    if ($store==_DB_STORE_YES) {
-	$values['body']=icms::$xoopsDB->quoteString($text);
-    }
 
     if ($store!=_DB_STORE_NONE) {
-	$res = icms::$xoopsDB->queryF("INSERT INTO ".CCMES. "(".join(',',array_keys($values)).") VALUES (".join(',', $values).")");
-	if ($res===false) return array("Error in DATABASE insert");
-	$id = icms::$xoopsDB->getInsertID();
+	$message_handler = icms_getModuleHandler('message', 'ccenter');
+	$message = $message_handler->create();
+	$message->setValues(array(
+	    'uid'=>$uid, 'touid'=>$touid,
+	    'ctime'=>$now, 'mtime'=>$now, 'atime'=>$now,
+	    'fidref'=>$form['formid'],
+	    'email'=>$email,
+	    'onepass'=>$onepass));
+	if ($store==_DB_STORE_YES) {
+	    $message->setBody(mod_ccenter_MessageBody::fromFields($fields));
+	}
+	if (!$message_handler->insert($message, true)) return array("Error in DATABASE insert");
+	$id = (int) $message->getVar('msgid', 'n');
 	if (empty($id)) return array("Internal Error in Store Message");
     } else {
 	$id = 0;

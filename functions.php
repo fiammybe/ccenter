@@ -95,64 +95,63 @@ function get_attr_value($pri, $name = null, $value = null)
 	return $value;
 }
 
-function cc_display_values($vals, $items, $msgid = 0, $add = "")
+/**
+ * Prepare the values of a message for display (HTML).
+ *
+ * @param array  $vals   key => text of the message body
+ * @param array  $items  items of the current form definition
+ * @param int    $msgid  message id (for attachments)
+ * @param string $add    extra URL arguments for attachments
+ * @param array  $labels key => label stored with the message; used instead of the current label of the form
+ * @return array label => HTML
+ */
+function cc_display_values($vals, $items, $msgid = 0, $add = "", $labels = [])
 {
+	$esc = function ($text) {
+		return icms_core_DataFilter::checkVar($text, "text", "output");
+	};
 	$values = [];
 	foreach ($vals as $key => $val) {
 		if (isset($items[$key])) {
 			$item = &$items[$key];
-			$key = $item["label"]; // replace display value
+			$label = isset($labels[$key]) ? $labels[$key] : $item["label"];
 		} else {
 			$item = null;
+			$label = isset($labels[$key]) ? $labels[$key] : $key;
 		}
 		if (preg_match('/^file=(.+)$/', $val, $d)) {
 			$val = cc_attach_image($msgid, $d[1], false, $add);
-		} else {
-			if ($item) {
-				$opts = &$item["options"];
-				switch ($item["type"]) {
-					case "radio":
-					case "select":
-						if (isset($opts[$val])) {
-							$val = strip_tags($opts[$val]);
+		} elseif ($item) {
+			$opts = &$item["options"];
+			switch ($item["type"]) {
+				case "radio":
+				case "select":
+					// an option label is written by the administrator; anything else (e.g. text typed
+					// after "other") is visitor input
+					$val = isset($opts[$val]) ? strip_tags($opts[$val]) : $esc($val);
+					break;
+				case "checkbox":
+					$cvals = [];
+					foreach (preg_split("/,\s?/", $val) as $v) {
+						if (!empty($v)) {
+							$cvals[] = isset($opts[$v]) ? strip_tags($opts[$v]) : $esc($v);
 						}
-						break;
-					case "checkbox":
-						$cvals = [];
-						foreach (preg_split("/,\s?/", $val) as $v) {
-							if (!empty($v)) {
-								$cvals[] = isset($opts[$v])
-									? strip_tags($opts[$v])
-									: $v;
-							}
-						}
-						$val = join(", ", $cvals);
-						break;
-					default:
-						$val = icms_core_DataFilter::checkVar(
-							$val,
-							"text",
-							"output",
-						);
-						break;
-				}
-			} else {
-				$val = icms_core_DataFilter::checkVar($val, "text", "output");
+					}
+					$val = join(", ", $cvals);
+					break;
+				default:
+					$val = $esc($val);
+					break;
 			}
+		} else {
+			$val = $esc($val);
 		}
-		$values[$key] = $val;
+		$values[$label] = $val;
+		unset($item);
 	}
 	return $values;
 }
 
-/**
- * The items of a form definition in the shape the templates and the posting code use.
- *
- * @param string $defs   stored definition (JSON, or the earlier line based text)
- * @param string $labels option variables (JSON or key=value text) overriding the item labels
- * @param string $prefix prefix of the generated input names
- * @return array
- */
 function get_form_attribute($defs, $labels = "", $prefix = "cc")
 {
 	try {
@@ -453,29 +452,10 @@ if (!function_exists("serialize_text")) {
 
 function move_attach_file($tmp, $file, $id = 0)
 {
-	global $icmsConfig;
-
-	$path = ICMS_UPLOAD_PATH . cc_attach_path($id, $file);
-	$dir = dirname($path);
-	$base = dirname($dir);
-	if (!is_dir($base)) {
-		if (!mkdir($base)) {
-			die("UPLOADS permittion error");
-		}
-		$fp = fopen("$base/.htaccess", "w");
-		fwrite($fp, "deny from all\n"); // not access direct
-		fclose($fp);
-	}
-	if (!is_dir($dir) && !mkdir($dir)) {
+	if (!mod_ccenter_Attachments::move($tmp, $file, $id)) {
 		die("UPLOADS permittion error");
 	}
-	if (empty($tmp)) {
-		$tmp = ICMS_UPLOAD_PATH . cc_attach_path(0, $file);
-	}
-	if (@rename($tmp, $path) || move_uploaded_file($tmp, $path)) {
-		return true;
-	}
-	return false;
+	return true;
 }
 
 if (!function_exists("template_dir")) {
@@ -496,9 +476,7 @@ if (!function_exists("template_dir")) {
 
 function cc_attach_path($id, $file)
 {
-	$dirname = basename(dirname(__FILE__));
-	$dir = $id ? sprintf("%05d", $id) : "work" . substr(session_id(), 0, 8);
-	return "/$dirname/$dir" . ($file ? "/$file" : "");
+	return mod_ccenter_Attachments::path($id, $file);
 }
 
 function cc_attach_image($id, $file, $urlonly = false, $add = "")
@@ -585,19 +563,7 @@ function cc_check_perm($data)
 
 function cc_get_message($msgid)
 {
-	$res = icms::$xoopsDB->query(
-		"SELECT m.*, title, cgroup FROM " .
-			CCMES .
-			" m," .
-			FORMS .
-			" WHERE msgid=" .
-			(int) $msgid .
-			" AND status<>" .
-			icms::$xoopsDB->quoteString(_STATUS_DEL) .
-			" AND fidref=formid",
-	);
-
-	$data = $res ? icms::$xoopsDB->fetchArray($res) : false;
+	$data = icms_getModuleHandler("message", "ccenter")->getRowWithForm($msgid);
 	if (!$data || !cc_check_perm($data)) {
 		// members would bounce between user.php and this page, so send them to the module index
 		$back = is_object(icms::$user) ? ICMS_URL . "/modules/" . basename(__DIR__) . "/" : ICMS_URL . "/user.php";
@@ -854,29 +820,14 @@ function custom_template($form, $items, $conf = false)
 
 function cc_log_message($formid, $comment, $msgid = 0)
 {
-	//global $xoopsUser;
-	$uid = is_object(icms::$user) ? icms::$user->getVar("uid") : 0;
-	$now = time();
-	icms::$xoopsDB->queryF(
-		"INSERT INTO " .
-			CCLOG .
-			"(ltime, fidref, midref, euid, comment)VALUES($now, $formid, $msgid, $uid, " .
-			icms::$xoopsDB->quoteString(preg_replace('/\n/', ", ", $comment)) .
-			")",
-	);
+	$uid = is_object(icms::$user) ? (int) icms::$user->getVar("uid") : 0;
+	icms_getModuleHandler("log", "ccenter")->record($formid, $comment, $msgid, $uid);
 	if ($msgid) {
-		$msgurl =
-			ICMS_URL .
-			"/modules/" .
-			basename(dirname(__FILE__)) .
-			"/message.php?id=$msgid";
-		$res = icms::$xoopsDB->query(
-			"SELECT title FROM " . FORMS . " WHERE formid=" . $formid,
-		);
-		[$title] = icms::$xoopsDB->fetchRow($res);
+		$msgurl = ICMS_URL . "/modules/" . basename(__DIR__) . "/message.php?id=$msgid";
+		$form = icms_getModuleHandler("form", "ccenter")->find($formid);
 		$tags = [
 			"LOG_STATUS" => $comment,
-			"FORM_NAME" => $title,
+			"FORM_NAME" => $form ? $form->getVar("title", "n") : "",
 			"CHANGE_BY" => icms::$user ? icms::$user->getVar("uname") : "",
 			"MSG_ID" => $msgid,
 			"MSG_URL" => $msgurl,
@@ -1090,28 +1041,20 @@ function change_message_status($msgid, $touid, $stat)
 		is_object(icms::$user) &&
 		icms::$user->isAdmin(icms::$module->getVar("mid"));
 	$own_status = array_slice($msg_status, $isadmin ? 0 : 1, $isadmin ? 5 : 3);
-	if (empty($own_status[$stat])) {
+	if (!mod_ccenter_Status::isValid($stat) || empty($own_status[$stat])) {
 		return false;
 	} // Invalid status
-	$s = icms::$xoopsDB->quoteString($stat);
-	$cond = "msgid=" . $msgid;
-	if ($touid) {
-		$cond .= " AND touid=" . $touid;
-	}
-	$res = icms::$xoopsDB->query(
-		"SELECT msgid,fidref,status FROM " .
-			CCMES .
-			" WHERE $cond AND status<>$s",
-	);
-	if (!$res || icms::$xoopsDB->getRowsNum($res) == 0) {
+	$handler = icms_getModuleHandler("message", "ccenter");
+	$message = $handler->find((int) $msgid);
+	if (
+		!$message ||
+		($touid && (int) $message->getVar("touid", "n") !== (int) $touid) ||
+		$message->getVar("status", "n") === $stat
+	) {
 		return false;
 	}
-	$data = icms::$xoopsDB->fetchArray($res);
-	$now = time();
-	$res = icms::$xoopsDB->queryF(
-		"UPDATE " . CCMES . " SET status=$s,mtime=$now WHERE msgid=$msgid",
-	);
-	if (!$res) {
+	$data = $message->toRow(); // status before the change, for the log
+	if (!$handler->updateFields($msgid, ["status" => $stat, "mtime" => time()])) {
 		die("DATABASE error");
 	} // unknown error?
 	cc_log_status($data, $stat);

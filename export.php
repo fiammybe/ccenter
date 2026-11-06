@@ -64,19 +64,22 @@ $res = icms::$xoopsDB->query('SELECT * FROM '.CCMES." WHERE $cond ORDER BY msgid
 
 $items = get_form_attribute($form['defs']);
 $labels = array('ID', _MD_POSTDATE, _CC_STATUS, _MD_CONTACT_FROM, _MD_CONTACT_TO);
-$n = $mpos = -1;
-foreach ($items as $item) {
+$columns = array();	// key and type of every column of the form, in the order of the definition
+foreach ($items as $key => $item) {
     if (empty($item['label'])) continue;	// skip comment
-    $n++;
-    if ($mpos<0 && $item['type'] == 'mail') $mpos = $n;
+    $columns[] = array('key' => $key, 'type' => $item['type']);
     $labels[] = $item['label'];
 }
 
 $contents = strip_tags(csv_str($labels))."\n";
 while ($data = icms::$xoopsDB->fetchArray($res)) {
-    $values = unserialize_text($data['body']);
-    if ($mpos>=0) {
-	array_splice($values, $mpos, 0, array($data['email']));
+    $stored = mod_ccenter_MessageBody::fromStored($data['body'])->toLegacyArray();
+    $values = array();
+    foreach ($columns as $column) {
+	$value = isset($stored[$column['key']]) ? $stored[$column['key']] : '';
+	// an address that is not stored in the body is kept in the message itself
+	if ($value === '' && $column['type'] == 'mail') $value = $data['email'];
+	$values[] = $value;
     }
     $fixval = array($data['msgid'], formatTimestamp($data['mtime']),
 		    $msg_status[$data['status']],

@@ -97,6 +97,23 @@ class mod_ccenter_MessageBody
         return $values;
     }
 
+    /**
+     * Labels that were stored with the message (not available for bodies written by earlier versions,
+     * which only know the name of the item).
+     *
+     * @return array key => label
+     */
+    public function displayLabels()
+    {
+        $labels = [];
+        foreach ($this->fields as $field) {
+            if (empty($field['legacy'])) {
+                $labels[(string) $field['key']] = (string) ($field['label'] ?? $field['key']);
+            }
+        }
+        return $labels;
+    }
+
     /** @return array key => label as it was when the message was sent */
     public function labels()
     {
