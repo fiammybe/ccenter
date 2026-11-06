@@ -12,19 +12,19 @@ function ccenter_sample_form()
 {
     global $msgs;
 
-    $db = icms::$xoopsDB;
-    $table = $db->prefix('ccenter_form');
-    $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 1;
+    require_once dirname(__FILE__) . '/class/autoload.php';
 
-    $data = [
-        'mtime'       => time(),
-        'title'       => $db->quoteString(_MI_SAMPLE_TITLE),
-        'description' => $db->quoteString(_MI_SAMPLE_DESC),
-        'grpperm'     => $db->quoteString('|' . ICMS_GROUP_ANONYMOUS . '|' . ICMS_GROUP_USERS . '|'),
-        'defs'        => $db->quoteString(_MI_SAMPLE_DEFS),
-        'priuid'      => $uid,
-    ];
-
-    $db->queryF('INSERT INTO ' . $table . ' (' . implode(',', array_keys($data)) . ') VALUES (' . implode(',', $data) . ')');
+    $handler = icms_getModuleHandler('form', 'ccenter');
+    $form = $handler->create();
+    $form->setValues([
+        'mtime' => time(),
+        'title' => _MI_SAMPLE_TITLE,
+        'description' => _MI_SAMPLE_DESC,
+        'defs' => mod_ccenter_FormSchema::normalize(_MI_SAMPLE_DEFS),
+        'optvars' => '{}',
+        'priuid' => is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 1,
+    ]);
+    $form->setAllowedGroups([ICMS_GROUP_ANONYMOUS, ICMS_GROUP_USERS]);
+    $handler->insert($form, true);
     $msgs[] = '&nbsp;&nbsp;<b>' . _MI_SAMPLE_FORM . '</b>';
 }

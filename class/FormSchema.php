@@ -139,6 +139,20 @@ class mod_ccenter_FormSchema
         return $this->data;
     }
 
+    /**
+     * @param string $key
+     * @return array|null the item with that key (not for comments)
+     */
+    public function item($key)
+    {
+        foreach ($this->data['items'] as $item) {
+            if (($item['type'] ?? 'text') !== 'comment' && (string) $item['key'] === (string) $key) {
+                return $item;
+            }
+        }
+        return null;
+    }
+
     public function toJson($pretty = false)
     {
         return mod_ccenter_Json::encode($this->data, $pretty);

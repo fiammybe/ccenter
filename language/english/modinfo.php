@@ -37,7 +37,7 @@ define("_MI_CCENTER_BLOCK_FORM","Contact form");
 define("_MI_CCENTER_LISTS","Number of list items");
 define("_MI_CCENTER_LISTS_DESC","Set number of list show a display");
 define("_MI_CCENTER_DEF_ATTRS","Default options");
-define("_MI_CCENTER_DEF_ATTRS_DESC","Setting form definition and other attribute <a href='help.php#attr'>default options</a>. Example: <tt>size=60,rows=5,cols=50</tt>");
+define("_MI_CCENTER_DEF_ATTRS_DESC","Setting form definition and other attribute <a href='help.php#attr'>default options</a>. Example: <tt>{&quot;size&quot;:60,&quot;rows&quot;:5,&quot;cols&quot;:50}</tt> (JSON; the earlier <tt>size=60,rows=5</tt> form is still read)");
 define("_MI_CCENTER_STATUS_COMBO", "Status selections");
 define("_MI_CCENTER_STATUS_COMBO_DESC","the Format as: <tt>Display-label: [status1[,status2...]]</tt>, include multipule lines. the status is a character from (-,a,b,c). Example: <tt>Open: - a</tt>");
 define("_MI_CCENTER_STATUS_COMBO_DEF","All: - a b c\nOpen: - a\nClosed: b c\n--------:\nWaiting: -\nWorking: a\nReplyed: b\nDone: c\n");

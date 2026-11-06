@@ -135,3 +135,19 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
 4. Migrate `grpperm` to IPF permissions; the column is kept for rollback.
 5. `declare(strict_types=1)` is not used anywhere in the module.
 6. All persisted structured data is JSON, including the `def_attrs` module preference (legacy `key=value` text is read and converted on update). The legacy CSV-like DSL survives only as admin import/export.
+
+## Findings from phase 2 (implementation notes)
+- **IPF column types.** Text columns are declared `XOBJ_DTYPE_OTHER`. `XOBJ_DTYPE_TXTBOX` censors and strips, and
+  `XOBJ_DTYPE_TXTAREA` runs the value through the HTML purifier, which would damage JSON and the raw form texts.
+- **`object_items` is not set** in `icms_version.php`. With it ImpressCMS runs `moduleUpgrade()` on install/update, which
+  derives table changes from the IPF object definitions; the schema is deliberately left alone.
+- **Criteria do not escape values** (`icms_db_criteria_Item` wraps the value in quotes as is, and drops the condition when the
+  value is empty). Handlers therefore cast ids to int and only pass fixed patterns; user text never goes into a criteria value.
+- **Confirm step.** The hidden fields of the confirmation page carried the *labels* of checked boxes, so the keys were lost
+  before storing. They now carry the option values; the stored JSON has `value` (keys) and `display` (labels).
+- **`notify_with_email` default.** ImpressCMS appends `<!-- filtered with htmlpurifier -->` markers to textarea preferences. The
+  stored default `notify_with_email=0` therefore read as the truthy text `0<!-- ... -->`, i.e. the visitor's address was always
+  shown/stored. The markers are now stripped, so the documented default (0 = off) applies. The address stays available in the
+  message itself and in the CSV export either way.
+- **Security fixes made on the way:** `file.php` accepted path elements in the file name (path traversal) and served any file type inline;
+  "take over message" (`status.php op=myself`) did not check the contact group; free text typed after "other" was shown unescaped.

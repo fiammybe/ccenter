@@ -70,4 +70,9 @@ function report_message($msg) {
     }
     $msgs[] = "&nbsp;&nbsp; $msg";
 }
-?>
+
+// convert data of earlier versions to JSON (form definitions, option variables, message bodies, preference)
+require_once dirname(__FILE__) . '/class/autoload.php';
+foreach (mod_ccenter_Migration::run() as $line) {
+    $msgs[] = $line;
+}

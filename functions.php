@@ -17,9 +17,9 @@ define("_STATUS_REPLY", mod_ccenter_Status::REPLY);
 define("_STATUS_CLOSE", mod_ccenter_Status::CLOSE);
 define("_STATUS_DEL", mod_ccenter_Status::DEL);
 
-define("_DB_STORE_LOG", 0); // logging only in db
-define("_DB_STORE_YES", 1); // store information in db
-define("_DB_STORE_NONE", 2); // query not store in db
+define("_DB_STORE_LOG", mod_ccenter_StoreMode::LOG); // logging only in db
+define("_DB_STORE_YES", mod_ccenter_StoreMode::YES); // store information in db
+define("_DB_STORE_NONE", mod_ccenter_StoreMode::NONE); // query not store in db
 
 define("_CC_WIDGET_TPL", "ccenter_form_widgets.html");
 
@@ -312,11 +312,9 @@ function assign_form_widgets(&$items, $conf = false)
 				$fmt = "<input type='hidden' name='{$fname}[]' value='%s' />";
 				$input = "";
 				foreach ($val as $k => $v) {
-					$val[$k] = $v = isset($opts[$v])
-						? strip_tags($opts[$v])
-						: $v;
-					$v = htmlspecialchars($v, ENT_QUOTES);
-					$input .= sprintf($fmt, $v);
+					// the hidden field carries the option value (not its label), the label is shown
+					$input .= sprintf($fmt, htmlspecialchars($v, ENT_QUOTES));
+					$val[$k] = isset($opts[$v]) ? strip_tags($opts[$v]) : $v;
 				}
 				$input .= htmlspecialchars(join(", ", $val), ENT_QUOTES);
 			} else {
@@ -551,7 +549,7 @@ function cc_check_perm($data)
 	if ($uid && icms::$user->isAdmin($mid)) {
 		return true;
 	}
-	$cgrp = $data["cgroup"];
+	$cgrp = $data["cgroup"] ?? 0;
 	if ($cgrp && $uid && in_array($cgrp, icms::$user->getGroups())) {
 		return true;
 	}
@@ -647,55 +645,7 @@ function is_cc_evaluate($id, $uid, $pass)
 
 function cc_notify_mail($tpl, $tags, $users, $from = "")
 {
-	// return: error count
-	global $icmsConfig;
-	$xoopsMailer = new icms_messaging_Handler();
-	if (is_array($users)) {
-		$err = 0;
-		foreach ($users as $u) {
-			$err += cc_notify_mail($tpl, $tags, $u, $from);
-		}
-		return $err;
-	}
-	if (is_object($users)) {
-		switch ($users->getVar("notify_method")) {
-			case XOOPS_NOTIFICATION_METHOD_PM:
-				$xoopsMailer->usePM();
-				$sender = is_object(icms::$user)
-					? icms::$user
-					: new icms_member_user_Object();
-				$xoopsMailer->setFromUser($sender);
-				break;
-			case XOOPS_NOTIFICATION_METHOD_EMAIL:
-				$xoopsMailer->useMail();
-				break;
-			case XOOPS_NOTIFICATION_METHOD_DISABLE:
-				return 0;
-			default:
-				return 1;
-		}
-		$xoopsMailer->setToUsers($users);
-	} else {
-		if (empty($users)) {
-			return 0;
-		}
-		$xoopsMailer->useMail();
-		$xoopsMailer->setToEmails($users);
-	}
-
-	$xoopsMailer->setFromEmail($from ? $from : $icmsConfig["adminmail"]);
-	$xoopsMailer->setFromName(icms::$module->getVar("name"));
-	$xoopsMailer->setSubject(_CC_NOTIFY_SUBJ);
-	$comment = get_attr_value(null, "reply_comment", "");
-	if (get_attr_value(null, "reply_use_comtpl")) {
-		$xoopsMailer->setBody($comment);
-	} else {
-		$xoopsMailer->assign("REPLY_COMMENT", $comment);
-		$xoopsMailer->setTemplateDir(template_dir($tpl));
-		$xoopsMailer->setTemplate($tpl);
-	}
-	$xoopsMailer->assign($tags);
-	return $xoopsMailer->send() ? 0 : 1;
+	return mod_ccenter_Mailer::send($tpl, $tags, $users, $from);
 }
 
 function check_form_tags($cust, $defs, $desc)

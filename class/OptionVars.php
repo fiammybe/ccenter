@@ -12,7 +12,12 @@ class mod_ccenter_OptionVars
      */
     public static function parse($text)
     {
+        $text = mod_ccenter_LegacyText::stripFilterMarkers($text);
         $data = mod_ccenter_Json::tryDecodeArray($text);
+        if ($data === null && mod_ccenter_Json::looksLikeJson($text)) {
+            // a preference that went through the text filter of the configuration form has its quotes encoded
+            $data = mod_ccenter_Json::tryDecodeArray(html_entity_decode($text, ENT_QUOTES, 'UTF-8'));
+        }
         if ($data !== null) {
             return $data;
         }
@@ -34,6 +39,6 @@ class mod_ccenter_OptionVars
     /** True when the stored text is already the current format. */
     public static function isCurrent($text)
     {
-        return mod_ccenter_Json::tryDecodeArray($text) !== null;
+        return mod_ccenter_Json::tryDecodeArray(mod_ccenter_LegacyText::stripFilterMarkers($text)) !== null;
     }
 }

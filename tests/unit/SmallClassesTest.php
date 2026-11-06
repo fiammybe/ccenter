@@ -61,10 +61,8 @@ final class SmallClassesTest extends TestCase
     }
 
     /**
-     * get_attr_value() keeps its defaults in a static variable.
-     *
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
+     * get_attr_value() keeps its defaults in a static variable, so this test changes them for the rest of the
+     * process. It lives in the class that is run last (classes run in alphabetical order); keep it that way.
      */
     public function testFormOptionsOverrideTheModuleDefaults(): void
     {

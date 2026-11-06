@@ -16,9 +16,8 @@ $file = mod_ccenter_Attachments::safeName($_GET['file'] ?? '');
 if ($file === '') die("No File");
 
 if ($msgid) {
-    $res = icms::$xoopsDB->query("SELECT msgid,uid,touid,onepass FROM ".CCMES." WHERE msgid=$msgid");
-    if (!$res || icms::$xoopsDB->getRowsNum($res)==0) die("No File");
-    $data = icms::$xoopsDB->fetchArray($res);
+    $data = icms_getModuleHandler('message', 'ccenter')->getRowWithForm($msgid);
+    if (!$data) die("No File");
     if (!cc_check_perm($data)) {
 	redirect_header(ICMS_URL.'/user.php', 3, _NOPERM);
 	exit;

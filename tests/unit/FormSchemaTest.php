@@ -119,17 +119,9 @@ final class FormSchemaTest extends TestCase
         $this->assertSame('Hi ', $items['Greeting']['default']); // guest: empty
     }
 
-    /** @dataProvider invalidSchemas */
-    public function testValidateReportsProblems(array $schema, string $expected): void
+    public function testValidateReportsProblems(): void
     {
-        $errors = mod_ccenter_FormSchema::validate($schema);
-        $this->assertNotEmpty($errors);
-        $this->assertStringContainsString($expected, implode("\n", $errors));
-    }
-
-    public function invalidSchemas(): array
-    {
-        return [
+        $cases = [
             'duplicate key' => [['version' => 1, 'items' => [['key' => 'A'], ['key' => 'A']]], 'used twice'],
             'unknown type' => [['version' => 1, 'items' => [['key' => 'A', 'type' => 'banana']]], 'unknown type'],
             'missing key' => [['version' => 1, 'items' => [['type' => 'text']]], 'key is missing'],
@@ -139,6 +131,11 @@ final class FormSchemaTest extends TestCase
             'options on text' => [['version' => 1, 'items' => [['key' => 'A', 'type' => 'text', 'options' => [['value' => 'x']]]]], 'only for radio'],
             'wrong version' => [['version' => 2, 'items' => []], 'version'],
         ];
+        foreach ($cases as $name => [$schema, $expected]) {
+            $errors = mod_ccenter_FormSchema::validate($schema);
+            $this->assertNotEmpty($errors, $name);
+            $this->assertStringContainsString($expected, implode("\n", $errors), $name);
+        }
     }
 
     public function testInvalidJsonIsRefusedWithAMessage(): void

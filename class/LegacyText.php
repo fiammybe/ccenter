@@ -8,6 +8,17 @@
 class mod_ccenter_LegacyText
 {
     /**
+     * ImpressCMS appends HTML comments to configuration textareas it filtered; they are no part of the value.
+     *
+     * @param string|null $text
+     * @return string
+     */
+    public static function stripFilterMarkers($text)
+    {
+        return preg_replace('/<!-- (?:filtered with htmlpurifier|input filtered) -->/', '', (string) $text);
+    }
+
+    /**
      * Parse "name: value" lines; lines starting with whitespace continue the previous value.
      *
      * @return array name => value

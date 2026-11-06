@@ -31,23 +31,49 @@ class mod_ccenter_MessageBody
     /**
      * @param string|null $stored JSON or legacy text
      */
-    public static function fromStored($stored)
+    public static function fromStored($stored, ?mod_ccenter_FormSchema $schema = null)
     {
         $data = mod_ccenter_Json::tryDecodeArray($stored);
         if ($data !== null && isset($data['fields']) && is_array($data['fields'])) {
             return new self(array_values($data['fields']), false);
         }
-        return self::fromLegacy((string) $stored);
+        return self::fromLegacy((string) $stored, $schema);
     }
 
-    public static function fromLegacy($text)
+    /**
+     * Read a body written by an earlier version. Those bodies hold the submitted values as flat text
+     * (the keys of the chosen options, not their labels). With the definition of the form the type,
+     * label and readable text of every field can be filled in.
+     *
+     * @param string                       $text
+     * @param mod_ccenter_FormSchema|null  $schema definition of the form the message was sent with
+     */
+    public static function fromLegacy($text, ?mod_ccenter_FormSchema $schema = null)
     {
         $fields = [];
-        foreach (mod_ccenter_LegacyText::unserializeText($text) as $name => $display) {
-            $field = ['key' => (string) $name, 'label' => (string) $name, 'type' => null, 'value' => $display, 'display' => $display, 'legacy' => true];
-            if (preg_match('/^file=(.+)$/', $display, $d)) {
+        foreach (mod_ccenter_LegacyText::unserializeText($text) as $name => $raw) {
+            $item = $schema ? $schema->item($name) : null;
+            $field = ['key' => (string) $name, 'label' => (string) $name, 'type' => null, 'value' => $raw, 'display' => $raw, 'legacy' => true];
+            if (preg_match('/^file=(.+)$/', $raw, $d)) {
                 $field['type'] = 'file';
                 $field['value'] = ['file' => $d[1]];
+                $field['display'] = $d[1];
+            } elseif ($item) {
+                $field['type'] = $item['type'] ?? 'text';
+                $field['label'] = (string) ($item['label'] ?? $name);
+                $labels = [];
+                foreach ($item['options'] ?? [] as $option) {
+                    $labels[(string) $option['value']] = strip_tags((string) ($option['label'] ?? $option['value']));
+                }
+                if ($field['type'] === 'radio' || $field['type'] === 'select') {
+                    $field['display'] = isset($labels[$raw]) ? $labels[$raw] : $raw;
+                } elseif ($field['type'] === 'checkbox') {
+                    $keys = array_values(array_filter(preg_split('/,\s?/', $raw), 'strlen'));
+                    $field['value'] = $keys;
+                    $field['display'] = implode(', ', array_map(function ($k) use ($labels) {
+                        return isset($labels[$k]) ? $labels[$k] : $k;
+                    }, $keys));
+                }
             }
             $fields[] = $field;
         }
@@ -107,7 +133,8 @@ class mod_ccenter_MessageBody
     {
         $labels = [];
         foreach ($this->fields as $field) {
-            if (empty($field['legacy'])) {
+            // a field converted from the earlier format has a real label only when the form definition was known
+            if (empty($field['legacy']) || !empty($field['type'])) {
                 $labels[(string) $field['key']] = (string) ($field['label'] ?? $field['key']);
             }
         }
@@ -125,9 +152,9 @@ class mod_ccenter_MessageBody
     }
 
     /** Convert whatever is stored to JSON text. */
-    public static function normalize($stored)
+    public static function normalize($stored, ?mod_ccenter_FormSchema $schema = null)
     {
-        return self::fromStored($stored)->toJson();
+        return self::fromStored($stored, $schema)->toJson();
     }
 
     /** True when the stored text already is the current format. */

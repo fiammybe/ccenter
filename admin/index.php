@@ -43,76 +43,48 @@ $fields = [
 ];
 $optfields = [];
 if ($op == "delform") {
-    $formid = filter_input(INPUT_POST, "formid", FILTER_SANITIZE_NUMBER_INT);
-    icms::$xoopsDB->queryF("DELETE FROM " . FORMS . " WHERE formid=" . $formid);
-    icms::$xoopsDB->queryF("DELETE FROM " . CCMES . " WHERE fidref=" . $formid);
-    // NOTE: add function delete ICMS comments.
-    // NOTE: add function delete uploads files
-    // NOTE: add function delete notifications
+    $formid = (int) ($_POST["formid"] ?? 0);
+    // removes the form with its messages, their attachments, comments and notification subscriptions
+    icms_getModuleHandler("form", "ccenter")->deleteWithMessages($formid);
     redirect_header("index.php", 1, _AM_FORM_DELETED);
     exit();
 } elseif (isset($_POST["formdefs"]) && !isset($_POST["preview"])) {
-    $formid = filter_input(INPUT_POST, "formid", FILTER_SANITIZE_NUMBER_INT);
-    $data = $vals = [];
+    $formid = (int) ($_POST["formid"] ?? 0);
+    $handler = icms_getModuleHandler("form", "ccenter");
+    $form = $formid ? $handler->find($formid) : null;
+    if (!$form) {
+        $form = $handler->create();
+    }
+    $values = [];
     foreach ($fields as $fname) {
-        $data[$fname] = $v = icms_core_DataFilter::stripSlashesGPC(
-            $_POST[$fname],
-        );
-        $v = icms::$xoopsDB->quoteString($v);
-        if ($formid) {
-            $vals[] = $fname . "=" . $v;
+        $values[$fname] = icms_core_DataFilter::stripSlashesGPC($_POST[$fname] ?? "");
+    }
+    $text = $values["defs"]; // the definition as typed (lines of the earlier text format, or JSON)
+    try {
+        $values["defs"] = mod_ccenter_FormSchema::normalize($text);
+    } catch (InvalidArgumentException $e) {
+        // nothing is stored; the form is shown again with what was typed and the problem
+        $save_error = $e->getMessage();
+    }
+    if (!isset($save_error)) {
+        $values["optvars"] = post_optvars();
+        $form->setValues($values);
+        $form->setAllowedGroups(array_map("intval", (array) ($_POST["grpperm"] ?? [])));
+        $form->setVar("mtime", time());
+        $res = $handler->insert($form, true);
+        $formid = (int) $form->getVar("formid", "n");
+        if (check_form_tags($values["custom"], $text, $values["description"])) {
+            $redirect = "index.php?formid=" . $formid;
         } else {
-            $vals[$fname] = $v;
+            $redirect = "index.php";
         }
+        if ($res) {
+            redirect_header($redirect, 1, _AM_FORM_UPDATED);
+        } else {
+            redirect_header($redirect, 3, _AM_FORM_UPDATE_FAIL);
+        }
+        exit();
     }
-    $v = icms::$xoopsDB->quoteString($data["optvars"] = post_optvars());
-    $fname = "optvars";
-    if ($formid) {
-        $vals[] = $fname . "=" . $v;
-    } else {
-        $vals[$fname] = $v;
-    }
-    $v = "|";
-    foreach ($_POST["grpperm"] as $gid) {
-        $v .= intval($gid) . "|";
-    }
-    $v = icms::$xoopsDB->quoteString($v);
-    if ($formid) {
-        $vals[] = "grpperm=" . $v;
-        $vals[] = "mtime=" . time();
-        $res = icms::$xoopsDB->queryF(
-            "UPDATE " .
-                FORMS .
-                " SET " .
-                join(",", $vals) .
-                " WHERE formid=" .
-                $formid,
-        );
-    } else {
-        $vals["grpperm"] = $v;
-        $vals["mtime"] = time();
-        $res = icms::$xoopsDB->queryF(
-            "INSERT INTO " .
-                FORMS .
-                "(" .
-                join(",", array_keys($vals)) .
-                ") VALUES(" .
-                join(",", $vals) .
-                ")",
-        );
-        $formid = icms::$xoopsDB->getInsertID();
-    }
-    if (check_form_tags($data["custom"], $data["defs"], $data["description"])) {
-        $redirect = "index.php?formid=" . $formid;
-    } else {
-        $redirect = "index.php";
-    }
-    if ($res) {
-        redirect_header($redirect, 1, _AM_FORM_UPDATED);
-    } else {
-        redirect_header($redirect, 3, _AM_FORM_UPDATE_FAIL);
-    }
-    exit();
 }
 
 if (!empty($_GET["lib"])) {
@@ -134,6 +106,9 @@ if (!empty($_GET["lib"])) {
 }
 
 cc_display_admin_menu(1);
+if (isset($save_error)) {
+    echo '<div class="errorMsg">' . nl2br(htmlspecialchars($save_error)) . "</div>\n";
+}
 
 switch ($op) {
     case "delete":
@@ -168,7 +143,7 @@ function post_optvars()
     foreach ($items as $item) {
         $fname = $item["name"];
         if ($fname == "others") {
-            foreach (unserialize_vars($item["value"]) as $k => $v) {
+            foreach (mod_ccenter_OptionVars::parse($item["value"]) as $k => $v) {
                 $vars[$k] = $v;
             }
         } else {
@@ -177,7 +152,7 @@ function post_optvars()
             }
         }
     }
-    return serialize_text($vars);
+    return mod_ccenter_OptionVars::encode($vars);
 }
 
 function list_forms()
@@ -306,7 +281,7 @@ function build_form($formid = 0)
         get_attr_value($data["optvars"]); // set default values
         $items = get_form_attribute($data["defs"]);
         assign_form_widgets($items);
-        if ($_POST["preview"]) {
+        if (!empty($_POST["preview"])) {
             echo "<h2>" .
                 _PREVIEW .
                 " : " .
@@ -328,11 +303,15 @@ function build_form($formid = 0)
             echo "</div>\n<hr size='5'/>\n";
         }
     } elseif ($formid) {
-        $res = icms::$xoopsDB->query(
-            "SELECT * FROM " . FORMS . " WHERE formid=$formid",
-        );
-        $data = icms::$xoopsDB->fetchArray($res);
+        $form_obj = icms_getModuleHandler("form", "ccenter")->find($formid);
+        $data = $form_obj->toRow();
         $data["grpperm"] = explode("|", trim($data["grpperm"], "|"));
+        try {
+            // edited as lines of text; saving stores the JSON form
+            $data["defs"] = $form_obj->schema()->toLegacy();
+        } catch (InvalidArgumentException $e) {
+            // keep the stored text so that it can be repaired
+        }
     } else {
         $data = [
             "title" => "",
@@ -532,7 +511,7 @@ function build_form($formid = 0)
         );
     $form->addElement($ccel11);
     $items = get_form_attribute(_CC_OPTDEFS, _AM_OPTVARS_LABEL, "optvar");
-    $vars = unserialize_vars($data["optvars"]);
+    $vars = mod_ccenter_OptionVars::parse($data["optvars"]);
     $others = "";
     foreach ($items as $k => $item) {
         $name = $item["name"];

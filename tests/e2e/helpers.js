@@ -18,7 +18,7 @@ function compose(args, input) {
 const phpLog = () => compose(['exec', '-T', 'web', 'cat', '/var/log/php_errors.log']);
 const clearPhpLog = () => compose(['exec', '-T', 'web', 'sh', '-c', ': > /var/log/php_errors.log']);
 const dropAdminMenuCache = () => compose(['exec', '-T', 'web', 'sh', '-c', 'rm -f /var/www/html/cache/adminmenu_*.php']);
-const sql = (q) => compose(['exec', '-T', 'db', 'mariadb', '-uroot', '-proot', 'icms', '-N', '-B', '-e', q]).trim();
+const sql = (q) => compose(['exec', '-T', 'db', 'mariadb', '-uroot', '-proot', 'icms', '-N', '-B', '--raw', '-e', q]).trim();
 
 // Log lines that point at module code or at its compiled templates (core/Protector noise is ignored on purpose).
 function moduleLogLines() {

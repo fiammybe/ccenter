@@ -17,7 +17,7 @@ class mod_ccenter_Form extends mod_ccenter_Object
         $this->initVar('grpperm', XOBJ_DTYPE_OTHER, '', false);     // accepting groups |ID|ID|
         $this->initVar('priuid', XOBJ_DTYPE_INT, 0, false);         // person in charge (negative: member of group -id)
         $this->initVar('cgroup', XOBJ_DTYPE_INT, 0, false);         // contact group
-        $this->initVar('store', XOBJ_DTYPE_INT, _DB_STORE_YES, false);
+        $this->initVar('store', XOBJ_DTYPE_INT, mod_ccenter_StoreMode::YES, false);
         $this->initVar('custom', XOBJ_DTYPE_INT, 0, false);
         $this->initVar('active', XOBJ_DTYPE_INT, 1, false);
         $this->initVar('weight', XOBJ_DTYPE_INT, 0, false);
