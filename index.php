@@ -56,6 +56,9 @@ if ($form['priuid']< 0) {	// assign group member
 $errors = array();
 if ($op!="form") {
     $errors = assign_post_values($items);
+    if (!cc_check_token()) {
+	$errors[] = cc_token_error();	// what was typed is shown again
+    }
     if (count($errors)) {
 	$op = 'form';
 	assign_form_widgets($items);

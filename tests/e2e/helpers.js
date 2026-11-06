@@ -45,6 +45,19 @@ async function eventually(fn, { timeout = 10000, interval = 250 } = {}) {
   }
 }
 
+// A member without administrator rights. It gets the password hash of the administrator (same password).
+function createUser(name, groupIds = [2]) {
+  const uid = sql(`SELECT uid FROM icms_users WHERE uname='${name}'`);
+  if (uid) return Number(uid);
+  // a copy of the administrator's row (it has every column filled in) as an ordinary member
+  sql(`CREATE TEMPORARY TABLE cc_new_user AS SELECT * FROM icms_users WHERE uid=1;
+       UPDATE cc_new_user SET uid=(SELECT MAX(uid)+1 FROM icms_users), uname='${name}', login_name='${name}', email='${name}@example.com', level=1, user_regdate=UNIX_TIMESTAMP();
+       INSERT INTO icms_users SELECT * FROM cc_new_user`);
+  const id = Number(sql(`SELECT uid FROM icms_users WHERE uname='${name}'`));
+  for (const g of groupIds) sql(`INSERT INTO icms_groups_users_link (groupid,uid) VALUES (${g},${id})`);
+  return id;
+}
+
 async function login(page, user = cfg.admin, pass = cfg.pass) {
   await page.goto(cfg.base + '/user.php');
   await page.fill('input[name=uname]', user);
@@ -60,4 +73,4 @@ async function updateModule(page, dirname = 'ccenter') {
   return (await page.innerText('body')).replace(/\s+/g, ' ');
 }
 
-module.exports = { clickAndSettle, eventually, updateModule, cfg, compose, phpLog, clearPhpLog, dropAdminMenuCache, sql, moduleLogLines, login };
+module.exports = { createUser, clickAndSettle, eventually, updateModule, cfg, compose, phpLog, clearPhpLog, dropAdminMenuCache, sql, moduleLogLines, login };

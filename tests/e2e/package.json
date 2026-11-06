@@ -3,7 +3,7 @@
   "private": true,
   "description": "End-to-end smoke tests for the ccenter module",
   "scripts": {
-    "test": "node --test --test-concurrency=1 smoke.test.js data.test.js",
+    "test": "node --test --test-concurrency=1 smoke.test.js data.test.js security.test.js",
     "install-wizard": "node install.js"
   },
   "devDependencies": {

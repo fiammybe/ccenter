@@ -29,6 +29,7 @@ class mod_ccenter_Migration
         $m = new self();
         $m->convertPreference();
         $m->convertForms();
+        $m->convertPermissions();
         $m->convertMessages(time() + max(1, (int) $seconds));
         return $m->report;
     }
@@ -83,6 +84,39 @@ class mod_ccenter_Migration
         if ($count) {
             $this->say("Converted the definition of <b>$count</b> form(s) to JSON");
         }
+    }
+
+    /**
+     * The groups that may use a form were kept as text ("|1|2|") in the form; they become ImpressCMS group
+     * permissions. The text stays in the form (and is kept in step) so that a downgrade keeps working.
+     */
+    public function convertPermissions()
+    {
+        $handler = icms_getModuleHandler('form', 'ccenter');
+        $count = 0;
+        foreach ($handler->getObjects() as $form) {
+            $id = (int) $form->getVar('formid', 'n');
+            $groups = $form->allowedGroups();
+            if (!$groups || $this->hasPermissionRows($handler, $id)) {
+                continue;
+            }
+            $handler->setAllowedGroups($id, $groups);
+            $count++;
+        }
+        if ($count) {
+            $this->say("Converted the access groups of <b>$count</b> form(s) to ImpressCMS group permissions");
+        }
+    }
+
+    private function hasPermissionRows($handler, $formId)
+    {
+        $db = icms::$xoopsDB;
+        $res = $db->query(
+            'SELECT COUNT(*) FROM ' . $db->prefix('group_permission') . ' WHERE gperm_name=' . $db->quoteString($handler::PERM_VIEW) .
+            ' AND gperm_modid=' . $handler->moduleId() . ' AND gperm_itemid=' . (int) $formId
+        );
+        $row = $res ? $db->fetchRow($res) : [0];
+        return (int) $row[0] > 0;
     }
 
     /** True when the text is a valid JSON form schema. */

@@ -11,19 +11,13 @@ if (!is_object(icms::$user)) {
 
 $id = isset($_GET['form']) ? (int) $_GET['form'] : 0;
 
-$cond = 'formid='.$id;
-if (!icms::$user->isAdmin(icms::$module->getVar('mid'))) {
-    $cond .= ' AND (priuid='.icms::$user->getVar('uid').
-	' OR cgroup IN ('.join(',', icms::$user->getGroups()).'))';
-}
-
-$res = icms::$xoopsDB->query("SELECT formid,defs FROM ".FORMS." WHERE $cond");
-
-if (!$res || icms::$xoopsDB->getRowsNum($res)==0) {
+$form_obj = $id ? icms_getModuleHandler('form', 'ccenter')->find($id) : null;
+if (!$form_obj || !mod_ccenter_AccessPolicy::forCurrentUser()->handlesForm($form_obj->toRow())) {
     $back = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : "index.php";
     redirect_header($back, 3, _NOPERM);
+    exit;
 }
-$form = icms::$xoopsDB->fetchArray($res);
+$form = $form_obj->toRow();
 
 $cond = "fidref=$id AND status<>".icms::$xoopsDB->quoteString(_STATUS_DEL);
 $range = isset($_GET['range']) ? icms_core_DataFilter::stripSlashesGPC($_GET['range']) : "";

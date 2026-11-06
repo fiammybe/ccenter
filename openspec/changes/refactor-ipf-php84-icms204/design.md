@@ -153,3 +153,18 @@ admin/index.php (forms)  admin/message.php (messages)  admin/about.php
   "take over message" (`status.php op=myself`) did not check the contact group; free text typed after "other" was shown unescaped.
 - **Visible differences after the conversion:** a submitted message no longer shows the "required" mark behind the labels; it shows
   the label stored with the message. The upgrade test checks everything else is identical.
+
+## Findings from phase 3 (implementation notes)
+- **Permissions.** `form_view` lives in the ImpressCMS group permissions (item id = form id). The `grpperm` column is kept and written
+  in step (ids sorted), so a downgrade still works. A form without any permission row is read from `grpperm`; this makes the module usable
+  in the window between replacing the files and running the module update, and an interrupted migration harmless. Webmasters (group 1)
+  are not special-cased by the listing query, only by `checkRight()`.
+- **Criteria and the `IN`/`NOT IN` operators** take a pre-built list, so ids are cast to int before they are joined.
+- **Tokens.** A token is created for every rendered form and consumed by the check. Forms built with templates need `<{$form.token}>`
+  (form, confirm) or `<{$token}>` (message page). Custom form templates get it through `{SUBMIT}`. **A site that overrides the module
+  templates in the theme or in the database must add the token field to its copies**; without it posting a form shows the "form has expired"
+  message. Blocks that show a form must not be cached by ImpressCMS (the token is per visitor).
+- **Status changes.** Previously `status.php` let only the person in charge change a status, but the admin list called the same function
+  with "any message"; the two cases are now explicit (`canChangeStatus` / `canAdminChangeStatus`).
+- **Message administration** validated nothing: any status text and any user id could be stored. It now accepts only the five statuses and
+  existing users.

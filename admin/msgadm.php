@@ -12,24 +12,35 @@ if (!function_exists("easiestml")) {
     }
 }
 
-$op = isset($_REQUEST["op"]) ? icms_core_DataFilter::stripSlashesGPC($_REQUEST["op"]) : "";
+// Changes are only made by POST requests that carry a valid security token.
+$is_post = $_SERVER["REQUEST_METHOD"] === "POST";
+$op = $is_post ? (string) icms_core_DataFilter::stripSlashesGPC($_POST["op"] ?? "") : "";
+$back = isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : "msgadm.php";
 
-if (isset($_POST["store"])) {
-    $msgid = filter_input(INPUT_POST, "msgid", FILTER_SANITIZE_NUMBER_INT);
-    $touid = (int) $_POST["touid"];
-    $stat = icms_core_DataFilter::stripSlashesGPC($_POST["status"]);
-    $res = icms::$xoopsDB->query(
-        "SELECT * FROM " . CCMES . " WHERE msgid=" . $msgid,
-    );
-    $back = isset($_SERVER["HTTP_REFERER"])
-        ? $_SERVER["HTTP_REFERER"]
-        : "msgadm.php";
-    if ($res && icms::$xoopsDB->getRowsNum($res) == 1) {
-        $data = icms::$xoopsDB->fetchArray($res);
+$handler = icms_getModuleHandler("message", "ccenter");
+if ($is_post && (isset($_POST["store"]) || $op !== "")) {
+    if (!cc_check_token()) {
+        redirect_header($back, 3, cc_token_error());
+        exit();
+    }
+}
+
+if ($is_post && isset($_POST["store"])) {
+    $msgid = (int) ($_POST["msgid"] ?? 0);
+    $touid = (int) ($_POST["touid"] ?? 0);
+    $stat = (string) icms_core_DataFilter::stripSlashesGPC($_POST["status"] ?? "");
+    $message = $handler->find($msgid);
+    // the status must be a real one, the person in charge a real user (or nobody)
+    if (
+        $message &&
+        mod_ccenter_Status::isValid($stat) &&
+        ($touid === 0 || icms::handler("icms_member")->getUser($touid))
+    ) {
+        $data = $message->toRow();
         $sets = [];
         $log = "";
         if ($data["status"] != $stat) {
-            $sets[] = "status=" . icms::$xoopsDB->quoteString($stat);
+            $sets["status"] = $stat;
             $log .= sprintf(
                 _CC_LOG_STATUS,
                 $msg_status[$data["status"]],
@@ -37,7 +48,7 @@ if (isset($_POST["store"])) {
             );
         }
         if ($data["touid"] != $touid) {
-            $sets[] = "touid=" . $touid;
+            $sets["touid"] = $touid;
             if ($log) {
                 $log .= "\n";
             }
@@ -50,34 +61,13 @@ if (isset($_POST["store"])) {
             $touid = 0; // not changed
         }
         if (count($sets)) {
-            $sets[] = "mtime=" . time();
-            $res = icms::$xoopsDB->queryF(
-                "UPDATE " .
-                    CCMES .
-                    " SET " .
-                    join(",", $sets) .
-                    " WHERE msgid=" .
-                    $msgid,
-            );
+            $sets["mtime"] = time();
+            $res = $handler->updateFields($msgid, $sets);
             if ($res && $touid) {
                 // switch person in charge
                 $notification_handler = icms::handler('icms_data_notification');
-                $notification_handler->subscribe(
-                    "message",
-                    $msgid,
-                    "comment",
-                    null,
-                    null,
-                    $touid,
-                );
-                $notification_handler->subscribe(
-                    "message",
-                    $msgid,
-                    "status",
-                    null,
-                    null,
-                    $touid,
-                );
+                $notification_handler->subscribe("message", $msgid, "comment", null, null, $touid);
+                $notification_handler->subscribe("message", $msgid, "status", null, null, $touid);
             }
             cc_log_message($data["fidref"], $log, $msgid);
             redirect_header($back, 1, _AM_MSG_UPDATED);
@@ -85,15 +75,13 @@ if (isset($_POST["store"])) {
         }
     }
     redirect_header($back, 3, _AM_MSG_UPDATE_FAIL);
-} elseif (!empty($op)) {
-    $uid = (int) icms::$user->getVar("uid");
-    foreach ($_POST["ids"] as $msgid) {
-        change_message_status($msgid, 0, $op);
+    exit();
+} elseif ($is_post && $op !== "") {
+    foreach ((array) ($_POST["ids"] ?? []) as $msgid) {
+        change_message_status((int) $msgid, 0, $op); // administrators may change any message
     }
-    $back = isset($_SERVER["HTTP_REFERER"])
-        ? $_SERVER["HTTP_REFERER"]
-        : "msgadm.php";
     redirect_header($back, 1, _AM_MSG_UPDATED);
+    exit();
 }
 
 icms_cp_header();
@@ -197,7 +185,7 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
 
     if ($res && icms::$xoopsDB->getRowsNum($res)) {
         $sorts = ["mtime", "status", "fidref", "touid", "comms"];
-        echo "<form method='post' name='msglist'>\n";
+        echo "<form method='post' name='msglist'>\n" . icms::$security->getTokenHTML();
         echo "<table class='outer' border='0' cellspacing='1'>\n";
         echo "<tr><th><input type='checkbox' id='checkall' name='checkall' onClick='xoopsCheckAll(\"msglist\", \"checkall\");'/>";
         foreach ($listctrl->getLabels($labels) as $lab) {
@@ -253,7 +241,7 @@ LEFT JOIN $users u ON touid=u.uid LEFT JOIN $users f ON m.uid=f.uid";
             $ope = "<a href='$msg'>" . _AM_DETAIL . "</a>";
             $ope .= " | <a href='?msgid=$id'>" . _EDIT . "</a>";
             $vals = mod_ccenter_MessageBody::fromStored($data["body"])->toLegacyArray();
-            $fval = preg_replace('/[\n\r].*$/', "...", array_shift($vals));
+            $fval = preg_replace('/[\n\r].*$/', "...", (string) array_shift($vals));
             $slen = 30;
             if (strlen($fval) > $slen) {
                 $fval = preg_replace('/\.\.\.$/', "", $fval);
@@ -319,7 +307,7 @@ function msg_detail($msgid)
     ];
     $touid = false;
     echo "<h2>" . _AM_MSG_ADMIN . "</h2>\n";
-    echo "<form method='post'>\n";
+    echo "<form method='post'>\n" . icms::$security->getTokenHTML();
     echo "<input type='hidden' name='msgid' value='$msgid'/>\n";
     echo "<table class='ccinfo' cellspacing='1' width='100%'>\n";
     $n = 0;

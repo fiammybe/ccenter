@@ -26,5 +26,6 @@ function ccenter_sample_form()
     ]);
     $form->setAllowedGroups([ICMS_GROUP_ANONYMOUS, ICMS_GROUP_USERS]);
     $handler->insert($form, true);
+    $handler->setAllowedGroups((int) $form->getVar('formid', 'n'), [ICMS_GROUP_ANONYMOUS, ICMS_GROUP_USERS]);
     $msgs[] = '&nbsp;&nbsp;<b>' . _MI_SAMPLE_FORM . '</b>';
 }

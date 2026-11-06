@@ -43,6 +43,10 @@ $fields = [
 ];
 $optfields = [];
 if ($op == "delform") {
+    if (!cc_check_token()) {
+        redirect_header("index.php", 3, cc_token_error());
+        exit();
+    }
     $formid = (int) ($_POST["formid"] ?? 0);
     // removes the form with its messages, their attachments, comments and notification subscriptions
     icms_getModuleHandler("form", "ccenter")->deleteWithMessages($formid);
@@ -60,11 +64,15 @@ if ($op == "delform") {
         $values[$fname] = icms_core_DataFilter::stripSlashesGPC($_POST[$fname] ?? "");
     }
     $text = $values["defs"]; // the definition as typed (lines of the earlier text format, or JSON)
-    try {
-        $values["defs"] = mod_ccenter_FormSchema::normalize($text);
-    } catch (InvalidArgumentException $e) {
-        // nothing is stored; the form is shown again with what was typed and the problem
-        $save_error = $e->getMessage();
+    if (!cc_check_token()) {
+        $save_error = cc_token_error(); // nothing is stored; the form is shown again
+    } else {
+        try {
+            $values["defs"] = mod_ccenter_FormSchema::normalize($text);
+        } catch (InvalidArgumentException $e) {
+            // nothing is stored; the form is shown again with what was typed and the problem
+            $save_error = $e->getMessage();
+        }
     }
     if (!isset($save_error)) {
         $values["optvars"] = post_optvars();
@@ -73,6 +81,9 @@ if ($op == "delform") {
         $form->setVar("mtime", time());
         $res = $handler->insert($form, true);
         $formid = (int) $form->getVar("formid", "n");
+        if ($res) {
+            $handler->setAllowedGroups($formid, array_map("intval", (array) ($_POST["grpperm"] ?? [])));
+        }
         if (check_form_tags($values["custom"], $text, $values["description"])) {
             $redirect = "index.php?formid=" . $formid;
         } else {
@@ -272,10 +283,10 @@ function build_form($formid = 0)
         $fields[] = "priuid";
         $fields[] = "cgroup";
         foreach ($fields as $name) {
-            $data[$name] = icms_core_DataFilter::stripSlashesGPC($_POST[$name]);
+            $data[$name] = icms_core_DataFilter::stripSlashesGPC($_POST[$name] ?? "");
         }
         $data["optvars"] = post_optvars();
-        $data["grpperm"] = $_POST["grpperm"];
+        $data["grpperm"] = (array) ($_POST["grpperm"] ?? []);
         $formid = intval($_POST["formid"]);
         // form preview
         get_attr_value($data["optvars"]); // set default values
@@ -305,7 +316,7 @@ function build_form($formid = 0)
     } elseif ($formid) {
         $form_obj = icms_getModuleHandler("form", "ccenter")->find($formid);
         $data = $form_obj->toRow();
-        $data["grpperm"] = explode("|", trim($data["grpperm"], "|"));
+        $data["grpperm"] = icms_getModuleHandler("form", "ccenter")->getAllowedGroups($formid);
         try {
             // edited as lines of text; saving stores the JSON form
             $data["defs"] = $form_obj->schema()->toLegacy();
@@ -331,6 +342,8 @@ function build_form($formid = 0)
         $formid ? _AM_FORM_EDIT : _AM_FORM_NEW,
         "myform",
         "index.php",
+        "post",
+        true, // security token
     );
     $ccel1 = new icms_form_elements_Hidden("formid", $formid);
     $form->addElement($ccel1);

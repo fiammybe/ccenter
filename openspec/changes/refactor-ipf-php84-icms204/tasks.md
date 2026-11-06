@@ -26,9 +26,9 @@
 - [ ] 2.6 Remove `functions.php` helpers as callers are migrated. Done: `cc_csv_parse`; thin wrappers now: `get_form_attribute`, `eval_user_value`, `unserialize_*`/`serialize_text`, `cc_notify_mail`, `cc_attach_path`, `move_attach_file`, `cc_get_message`, `cc_log_message`, `change_message_status`. Still to go with phases 4 and 5: `ListCtrl`, `CcBreadcrumbs`, widget/POST functions, `get_attr_value`, `cc_display_values`, raw SQL in the list pages and admin lists
 
 ## 3. Access control
-- [ ] 3.1 Register `form_view` permission, `setGrantedObjectsCriteria` in listings
-- [ ] 3.2 Staff/guest access checks in one `AccessPolicy` class
-- [ ] 3.3 CSRF tokens on all POST/state-changing GET requests
+- [x] 3.1 `form_view` permission (ImpressCMS group permissions, registered with `addPermission`); listings and the form block use `FormHandler::getAccessible()`. `setGrantedObjectsCriteria()` itself is not used: it ignores forms without permission rows, which the fallback for not yet converted forms needs
+- [x] 3.2 `AccessPolicy` (view/handle/take over/change status), unit tested; used by `cc_check_perm`, `change_message_status`, `status.php`, `export.php`. The SQL conditions of the staff lists in `reception.php` follow the same rule and move with the front-end in phase 5
+- [x] 3.3 CSRF tokens on every POST that changes data (form posting, status/take over/evaluation, form administration, message administration); `status.php` accepts POST only. The only GET that changes something is the automatic "accepted" status when the person in charge opens a new message (kept on purpose)
 
 ## 4. Admin
 - [ ] 4.1 Form admin: `icms_ipf_view_Table` + `getForm()` + Controller (create/edit/clone/delete); schema edited as JSON with validation, plus "import legacy DSL" and "export legacy DSL"
@@ -46,7 +46,7 @@
 
 ## 6. Install / update / release
 - [ ] 6.1 `icms_version.php` 2.0 manifest, `object_items`, no globals
-- [ ] 6.2 `oninstall.php` via handler (sample form as JSON) [done in phase 2]; `onupdate.php` idempotent incl. chunked JSON conversion of `defs`, `optvars`, `body` and the `def_attrs` preference [done in phase 2, `mod_ccenter_Migration`]; `grpperm` migration still to do (phase 3); the old schema steps in `onupdate.php` still use string-built SQL
+- [ ] 6.2 `oninstall.php` via handler (sample form as JSON) [done in phase 2]; `onupdate.php` idempotent incl. chunked JSON conversion of `defs`, `optvars`, `body` and the `def_attrs` preference [done in phase 2, `mod_ccenter_Migration`]; `grpperm` migration to group permissions [done in phase 3]; the old schema steps in `onupdate.php` still use string-built SQL
 - [ ] 6.3 Language files (the English `def_attrs` description already shows the JSON form; the other languages follow): consistent constant sets, English fallback; remove `language/japanese` (EUC-JP)
 - [ ] 6.4 README, release notes, upgrade notes (removed helpers, requirements)
 - [ ] 6.5 Full regression on 8.2/8.3/8.4, upgrade test from 1.0 data set

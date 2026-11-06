@@ -527,36 +527,37 @@ function return_unit_bytes($size)
 	return round($size, 1) . "G" . $unit;
 }
 
-// Access allow:
-//   1. onetime password matched
-//   2. administrator
-//   3. order from/to users
+/**
+ * Check the security token of a state-changing request (CSRF protection). The token is consumed.
+ *
+ * @return bool
+ */
+function cc_check_token()
+{
+	return icms::$security->check();
+}
+
+/** Text for a refused request: the reason of the token check, or the general message. */
+function cc_token_error()
+{
+	$errors = icms::$security->getErrors();
+	if ($errors) {
+		return implode("<br />", $errors);
+	}
+	return defined("_MD_TOKEN_ERR") ? _MD_TOKEN_ERR : _CORE_TOKENINVALID;
+}
+
+// Access to a message (see mod_ccenter_AccessPolicy):
+//   1. the one-time password matches, 2. administrator, 3. contact group, 4. sender / person in charge
 function cc_check_perm($data)
 {
-	$uid = is_object(icms::$user) ? icms::$user->getVar("uid") : 0;
-
-	$pass = isset($_GET["p"]) ? $_GET["p"] : "";
-	if ($pass) {
-		$_SESSION["onepass"] = $pass;
+	$pass = isset($_GET["p"]) ? (string) $_GET["p"] : "";
+	if ($pass !== "") {
+		$_SESSION["onepass"] = $pass; // remembered, so that the links on the following pages work
 	} else {
-		$pass = empty($_SESSION["onepass"]) ? "" : $_SESSION["onepass"];
+		$pass = isset($_SESSION["onepass"]) ? (string) $_SESSION["onepass"] : "";
 	}
-	if (!empty($data["onepass"]) && $data["onepass"] == $pass) {
-		return true;
-	}
-
-	$mid = is_object(icms::$module) ? icms::$module->getVar("mid") : 0;
-	if ($uid && icms::$user->isAdmin($mid)) {
-		return true;
-	}
-	$cgrp = $data["cgroup"] ?? 0;
-	if ($cgrp && $uid && in_array($cgrp, icms::$user->getGroups())) {
-		return true;
-	}
-	if ($uid && ($data["uid"] == $uid || $data["touid"] == $uid)) {
-		return true;
-	}
-	return false;
+	return mod_ccenter_AccessPolicy::forCurrentUser()->canViewMessage($data, $pass);
 }
 
 function cc_get_message($msgid)
@@ -729,6 +730,7 @@ function custom_template($form, $items, $conf = false)
 		);
 		$rep[] =
 			"<input type='hidden' name='op' value='store' />" .
+			icms::$security->getTokenHTML() .
 			"<input type='submit' value='" .
 			_MD_SUBMIT_SEND .
 			"' />";
@@ -746,6 +748,7 @@ function custom_template($form, $items, $conf = false)
 		);
 		$rep[] =
 			"<input type='hidden' name='op' value='confirm' />" .
+			icms::$security->getTokenHTML() .
 			"<input type='submit' value='" .
 			_MD_SUBMIT_CONF .
 			"' />";
@@ -983,24 +986,27 @@ class ListCtrl
 	}
 }
 
+/**
+ * Change the status of a message. Only the person in charge may do that (see mod_ccenter_AccessPolicy).
+ *
+ * @param int    $msgid
+ * @param int    $touid the user who asks; must be the person in charge
+ * @param string $stat  new status
+ * @return bool whether the status was changed
+ */
 function change_message_status($msgid, $touid, $stat)
 {
-	global $msg_status;
-
-	$isadmin =
-		is_object(icms::$user) &&
-		icms::$user->isAdmin(icms::$module->getVar("mid"));
-	$own_status = array_slice($msg_status, $isadmin ? 0 : 1, $isadmin ? 5 : 3);
-	if (!mod_ccenter_Status::isValid($stat) || empty($own_status[$stat])) {
-		return false;
-	} // Invalid status
+	$policy = mod_ccenter_AccessPolicy::forCurrentUser();
 	$handler = icms_getModuleHandler("message", "ccenter");
 	$message = $handler->find((int) $msgid);
-	if (
-		!$message ||
-		($touid && (int) $message->getVar("touid", "n") !== (int) $touid) ||
-		$message->getVar("status", "n") === $stat
-	) {
+	if (!$message) {
+		return false;
+	}
+	// $touid 0: an administrator in the message administration; otherwise the person in charge
+	$allowed = $touid
+		? (int) $touid === $policy->uid() && $policy->canChangeStatus($message->toRow(), $stat)
+		: $policy->canAdminChangeStatus($message->toRow(), $stat);
+	if (!$allowed) {
 		return false;
 	}
 	$data = $message->toRow(); // status before the change, for the log
@@ -1130,6 +1136,7 @@ function render_form(&$form, $op)
 		"hasfile" => false,
 		"priuser" => ["uid" => 0, "uname" => "", "name" => ""],
 	];
+	$form["token"] = icms::$security->getTokenHTML(); // hidden field for templates: <{$form.token}>
 	$xoopsTpl->assign("heading", "");
 	$xoopsTpl->assign("form", $form);
 	return $template;

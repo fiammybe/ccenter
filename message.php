@@ -39,15 +39,18 @@ $values = cc_display_values($body->toLegacyArray(), $items, $data['msgid'], $add
 $data['comment'] = icms_core_DataFilter::checkVar($data['comment'], 'text', 'input');
 $isadmin = $uid && icms::$user->isAdmin(icms::$module->getVar('mid'));
 $title = $data['title'];
-list($lab) = array_keys($values);
 if ($isadmin) {
     $breadcrumbs->set($title, "reception.php?form=".$data['fidref']);
 } else {
     $breadcrumbs->set($title, "index.php?form=".$data['fidref']);
 }
-$breadcrumbs->set($lab.': '.$values[$lab], '');
+if ($values) {	// a message of a form that keeps nothing has no values
+    $lab = array_key_first($values);
+    $breadcrumbs->set($lab.': '.$values[$lab], '');
+}
 $breadcrumbs->assign();
 $has_mail = !empty($data['email']);
+$xoopsTpl->assign('token', icms::$security->getTokenHTML());
 $xoopsTpl->assign(
     array('subject'=>$title,
 	  'sender'=>icms_member_user_Handler::getUserLink($data['uid']),

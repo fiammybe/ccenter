@@ -11,6 +11,7 @@
 <a name="form"></a>
 <form action="<{$form.cc_url}>/<{$form.action}>" name="ccenter" class="ccform" method="post"<{if $form.check_script}> onsubmit="return xoopsFormValidate_ccenter();"<{/if}><{if $form.hasfile}> enctype="multipart/form-data"<{/if}>>
 <input type="hidden" name="op" value="<{$op}>" />
+<{$form.token}>
 
 <table class="outer" align="center" cellspacing="1" border="0" summary="Contact form items">
   <col style="width: 20%;"/>

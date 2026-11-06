@@ -9,6 +9,11 @@ $uid = is_object(icms::$user) ? (int) icms::$user->getVar('uid') : 0;
 $msgid = (int) ($_POST['id'] ?? 0);
 
 $redirect = "message.php?id=".$msgid;
+// every change needs a POST request that carries a valid security token
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !cc_check_token()) {
+    redirect_header($redirect, 3, cc_token_error());
+    exit;
+}
 $clean_op = (isset($_POST['op'])) ? trim(filter_input(INPUT_POST, 'op')) : '';
 
 $message_handler = icms_getModuleHandler('message', 'ccenter');
@@ -54,10 +59,7 @@ if (!empty($_POST['eval'])) {	// evaluate at last
     case 'myself':
 	// a member of the contact group (or an administrator) takes over a message nobody is in charge of
 	$data = $uid ? $message_handler->getRowWithForm($msgid) : null;
-	$allowed = $data && $data['touid'] == 0 && (
-	    icms::$user->isAdmin(icms::$module->getVar('mid')) ||
-	    ($data['cgroup'] && in_array($data['cgroup'], icms::$user->getGroups())));
-	if ($allowed) {
+	if ($data && mod_ccenter_AccessPolicy::forCurrentUser()->canTakeOver($data)) {
 	    $fid = $data['fidref'];
 	    $s = $data['status'];
 	    $message_handler->updateFields($msgid, array(

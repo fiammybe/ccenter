@@ -56,6 +56,7 @@ class mod_ccenter_Form extends mod_ccenter_Object
     public function setAllowedGroups(array $groupIds)
     {
         $ids = array_unique(array_map('intval', $groupIds));
+        sort($ids);
         $this->setVar('grpperm', $ids ? '|' . implode('|', $ids) . '|' : '');
     }
 }

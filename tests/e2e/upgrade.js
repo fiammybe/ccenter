@@ -110,6 +110,8 @@ async function verify() {
   const defs = JSON.parse(h.sql(`SELECT defs FROM icms_ccenter_form WHERE formid=${st.formId}`));
   assert.equal(defs.items[0].type, 'comment');
   assert.deepEqual(defs.items.filter((i) => i.type !== 'comment').map((i) => i.key), ['Your name', 'Email', 'Kind', 'Topics', 'Colour', 'Message']);
+  assert.equal(h.sql(`SELECT group_concat(gperm_groupid ORDER BY gperm_groupid) FROM icms_group_permission WHERE gperm_name='form_view' AND gperm_itemid=${st.formId}`), '1,2,3', 'the groups became group permissions');
+  assert.equal(h.sql(`SELECT grpperm FROM icms_ccenter_form WHERE formid=${st.formId}`), '|1|2|3|', 'the old text is kept');
   const prefs = h.sql("SELECT conf_value FROM icms_config WHERE conf_name='def_attrs'").replace(/<!--.*?-->/g, '');
   JSON.parse(prefs);
 

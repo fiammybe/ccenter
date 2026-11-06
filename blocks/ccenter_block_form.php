@@ -13,20 +13,11 @@ include_once "$moddir/functions.php";
 
 function b_ccenter_form_show($options) {
     global $xoopsTpl;
-    $cond = "active";
-    if (is_object(icms::$user)) {
-	$conds = array();
-	foreach (icms::$user->getGroups() as $gid) {
-	    $conds[] = "grpperm LIKE '%|$gid|%'";
-	}
-	if ($conds) $cond .= " AND (".join(' OR ', $conds).")";
-    } else {
-	$cond .= " AND grpperm LIKE '%|".ICMS_GROUP_ANONYMOUS."|%'";
-    }
-    if (!empty($options[0])) $cond .= ' AND formid='.(int) $options[0];
-    $res = icms::$xoopsDB->query("SELECT * FROM ".FORMS." WHERE $cond ORDER BY weight,formid");
-    if (!$res || icms::$xoopsDB->getRowsNum($res)==0) return array();
-    $form = icms::$xoopsDB->fetchArray($res);
+    // the same rule as on the form page: only forms the visitor's groups may use
+    $groups = is_object(icms::$user) ? icms::$user->getGroups() : array(ICMS_GROUP_ANONYMOUS);
+    $forms = icms_getModuleHandler('form', 'ccenter')->getAccessible($groups, empty($options[0]) ? 0 : (int) $options[0]);
+    if (!$forms) return array();
+    $form = reset($forms)->toRow();
     $items = get_form_attribute($form['defs']);
     assign_form_widgets($items);
     $form['items'] =& $items;
